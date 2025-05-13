@@ -7,6 +7,7 @@
  * need to use are documented accordingly near the end.
  */
 import { initTRPC } from "@trpc/server";
+import { cache } from "react";
 import superjson from "superjson";
 import { ZodError } from "zod";
 
@@ -24,12 +25,11 @@ import { db } from "~/server/db";
  *
  * @see https://trpc.io/docs/server/context
  */
-export const createTRPCContext = async (opts: { headers: Headers }) => {
+export const createTRPCContext = cache(async () => {
   return {
     db,
-    ...opts,
   };
-};
+});
 
 /**
  * 2. INITIALIZATION
