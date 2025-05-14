@@ -1,7 +1,7 @@
 import "~/styles/globals.css";
 
 import { type Metadata } from "next";
-import { Geist } from "next/font/google";
+import { Lexend_Deca, Readex_Pro } from "next/font/google";
 
 import { TRPCReactProvider } from "~/trpc/react";
 
@@ -11,16 +11,20 @@ export const metadata: Metadata = {
   icons: [{ rel: "icon", url: "/favicon.ico" }],
 };
 
-const geist = Geist({
+const lexendDeca = Lexend_Deca({
   subsets: ["latin"],
-  variable: "--font-geist-sans",
+  variable: "--font-lexend-deca",
+});
+const readexPro = Readex_Pro({
+  subsets: ["latin"],
+  variable: "--font-readex-pro",
 });
 
 export default function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="en" className={`${geist.variable}`}>
+    <html lang="en" className={`${lexendDeca.variable} ${readexPro.variable}`}>
       <body>
         <TRPCReactProvider>{children}</TRPCReactProvider>
       </body>
