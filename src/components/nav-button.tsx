@@ -11,7 +11,7 @@ export default function NavButton({
 }: {
   href?: string;
   children: React.ReactNode;
-}) {
+} & React.ComponentProps<typeof Button>) {
   const pathname = usePathname();
   if (href) {
     return (
@@ -31,6 +31,7 @@ export default function NavButton({
       <Button
         variant="ghost"
         className={`text-muted-foreground font-heading hover:text-foreground bg-none transition-all hover:scale-105 md:block ${pathname === href ? "md:bg-primary/50 text-foreground" : ""}`}
+        {...props}
       >
         {children}
       </Button>

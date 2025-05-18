@@ -133,15 +133,18 @@ export default function RootLayout({
             <main>{children}</main>
             <nav className="bg-background supports-[backdrop-filter]:bg-background/80 sticky bottom-0 z-50 w-full border-t py-4 backdrop-blur-md md:hidden">
               <div className="flex items-center justify-around">
-                <NavButton href="/">
+                <NavButton href="/" size="icon">
                   <House className="size-6" />
                 </NavButton>
-                <NavButton href="/search">
+                <NavButton href="/search" size="icon">
                   <Search className="size-6" />
                 </NavButton>
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <Button className="hover:text-foreground bg-transparent">
+                    <Button
+                      className="hover:text-foreground bg-transparent"
+                      size="icon"
+                    >
                       <PlusSquare className="text-muted-foreground size-6" />
                     </Button>
                   </DropdownMenuTrigger>
@@ -160,7 +163,7 @@ export default function RootLayout({
                     </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
-                <NavButton href="/messages">
+                <NavButton href="/messages" size="icon">
                   <MessageCircle className="size-6" />
                 </NavButton>
                 <SignedIn>
@@ -176,7 +179,10 @@ export default function RootLayout({
                 </SignedIn>
                 <SignedOut>
                   <AuthModal>
-                    <Button className="hover:text-foreground bg-transparent">
+                    <Button
+                      className="hover:text-foreground bg-transparent"
+                      size="icon"
+                    >
                       <LogIn className="text-muted-foreground size-6" />
                     </Button>
                   </AuthModal>
