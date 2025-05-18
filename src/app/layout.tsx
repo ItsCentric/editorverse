@@ -133,7 +133,7 @@ export default function RootLayout({
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <Button className="hover:text-foreground bg-transparent">
-                      <PlusSquare className="text-muted size-6" />
+                      <PlusSquare className="text-muted-foreground size-6" />
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent className="mb-1">
@@ -154,6 +154,16 @@ export default function RootLayout({
                 <NavButton href="/messages">
                   <MessageCircle className="size-6" />
                 </NavButton>
+                <SignedIn>
+                  <UserButton />
+                </SignedIn>
+                <SignedOut>
+                  <AuthModal>
+                    <Button className="hover:text-foreground bg-transparent">
+                      <LogIn className="text-muted-foreground size-6" />
+                    </Button>
+                  </AuthModal>
+                </SignedOut>
               </div>
             </nav>
           </TRPCReactProvider>
