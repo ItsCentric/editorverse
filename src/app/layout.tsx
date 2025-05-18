@@ -25,6 +25,7 @@ import {
   DropdownMenuTrigger,
 } from "~/components/ui/dropdown-menu";
 import AuthModal from "~/components/auth-modal";
+import { dark } from "@clerk/themes";
 
 export const metadata: Metadata = {
   title: "Editorverse",
@@ -61,7 +62,7 @@ export default function RootLayout({
   return (
     <html lang="en" className={`${lexendDeca.variable} ${readexPro.variable}`}>
       <body className="dark">
-        <ClerkProvider>
+        <ClerkProvider appearance={{ baseTheme: dark }}>
           <TRPCReactProvider>
             <nav className="bg-background supports-[backdrop-filter]:bg-background/80 sticky top-0 z-50 w-full border-b py-4 backdrop-blur-md md:top-0">
               <div className="container mx-auto flex items-center justify-center md:justify-between">
@@ -85,7 +86,7 @@ export default function RootLayout({
                   </div>
                 </div>
                 <SignedIn>
-                  <div className="hidden gap-2 md:flex">
+                  <div className="hidden items-center gap-4 md:flex">
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
                         <SpecialButton size="lg">
@@ -108,7 +109,15 @@ export default function RootLayout({
                         </DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>
-                    <UserButton />
+                    <UserButton
+                      appearance={{
+                        elements: {
+                          rootBox: "!size-9",
+                          userButtonAvatarBox: "!w-full !h-full",
+                          userButtonTrigger: "!w-full !h-full",
+                        },
+                      }}
+                    />
                   </div>
                 </SignedIn>
                 <SignedOut>
@@ -155,7 +164,15 @@ export default function RootLayout({
                   <MessageCircle className="size-6" />
                 </NavButton>
                 <SignedIn>
-                  <UserButton />
+                  <UserButton
+                    appearance={{
+                      elements: {
+                        rootBox: "!size-7",
+                        userButtonAvatarBox: "!w-full !h-full",
+                        userButtonTrigger: "!w-full !h-full",
+                      },
+                    }}
+                  />
                 </SignedIn>
                 <SignedOut>
                   <AuthModal>
