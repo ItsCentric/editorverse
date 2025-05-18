@@ -17,7 +17,7 @@ export default function NavButton({
     return (
       <Button
         variant="ghost"
-        className={`text-muted hover:text-foreground bg-none transition-all hover:scale-105 ${pathname === href ? "md:bg-primary/50 text-foreground" : ""}`}
+        className={`text-muted-foreground hover:text-foreground bg-none transition-all hover:scale-105 ${pathname === href ? "md:bg-primary/50 text-foreground" : ""}`}
         {...props}
         asChild
       >
@@ -30,7 +30,7 @@ export default function NavButton({
     return (
       <Button
         variant="ghost"
-        className={`text-muted font-heading hover:text-foreground bg-none transition-all hover:scale-105 md:block ${pathname === href ? "md:bg-primary/50 text-foreground" : ""}`}
+        className={`text-muted-foreground font-heading hover:text-foreground bg-none transition-all hover:scale-105 md:block ${pathname === href ? "md:bg-primary/50 text-foreground" : ""}`}
       >
         {children}
       </Button>

@@ -10,6 +10,20 @@
   --font-sans:
     var(--font-readex-pro), ui-sans-serif, system-ui, sans-serif,
     "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+  --animate-caret-blink: "caret-blink 1.25s ease-out infinite";
+
+  @keyframes caret-blink {
+    0%,
+    70%,
+    100% {
+      opacity: 1;
+    }
+
+    20%,
+    50% {
+      opacity: 0;
+    }
+  }
 }
 
 @theme inline {
@@ -85,14 +99,14 @@
     --primary-foreground: oklch(91.52% 0.033 313.5);
     --secondary: oklch(43.28% 0.111 317.52);
     --secondary-foreground: oklch(91.52% 0.033 313.5);
-    --muted: oklch(81.62% 0.069 315.01);
-    --muted-foreground: 278 48% 91%;
-    --accent: oklch(75.07% 0.155 62.43);
-    --accent-foreground: oklch(16.93% 0.036 314.62);
+    --muted: oklch(35% 0.06 313);
+    --muted-foreground: oklch(75% 0.015 313);
+    --accent: oklch(55% 0.27 260);
+    --accent-foreground: oklch(98% 0.02 260);
     --destructive: oklch(0.39 0.1297 25.57);
     --destructive-foreground: oklch(19.63% 0.052 312.04);
-    --border: oklch(63.13% 0.145 314.09);
-    --input: oklch(81.62% 0.069 315.01);
+    --border: oklch(28% 0.05 314.62);
+    --input: oklch(16.93% 0.036 314.62);
     --ring: oklch(76.51% 0.147 63.7);
   }
 }
