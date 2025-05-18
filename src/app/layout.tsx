@@ -85,7 +85,7 @@ export default function RootLayout({
                   </div>
                 </div>
                 <SignedIn>
-                  <div className="flex gap-2">
+                  <div className="hidden gap-2 md:flex">
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
                         <SpecialButton size="lg">
