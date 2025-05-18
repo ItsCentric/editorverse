@@ -17,14 +17,14 @@ import {
   UsersRound,
   Video,
 } from "lucide-react";
-import NavButton from "~/components/nav-button";
+import NavButton from "./nav-button";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "~/components/ui/dropdown-menu";
-import AuthModal from "~/components/auth-modal";
+import AuthModal from "./auth-modal";
 import { dark } from "@clerk/themes";
 
 export const metadata: Metadata = {

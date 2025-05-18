@@ -6,9 +6,9 @@ import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import type { OAuthStrategy } from "@clerk/types";
-import { Button } from "./ui/button";
-import Google from "./brand-icons/google";
-import Apple from "./brand-icons/apple";
+import { Button } from "~/components/ui/button";
+import Google from "~/components/brand-icons/google";
+import Apple from "~/components/brand-icons/apple";
 import {
   Form,
   FormControl,
@@ -16,7 +16,7 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from "./ui/form";
+} from "~/components/ui/form";
 import {
   ArrowLeft,
   AtSign,
@@ -26,8 +26,12 @@ import {
   Lock,
   Mail,
 } from "lucide-react";
-import { Input } from "./ui/input";
-import { InputOTP, InputOTPGroup, InputOTPSlot } from "./ui/input-otp";
+import { Input } from "~/components/ui/input";
+import {
+  InputOTP,
+  InputOTPGroup,
+  InputOTPSlot,
+} from "~/components/ui/input-otp";
 import {
   Tooltip,
   TooltipContent,

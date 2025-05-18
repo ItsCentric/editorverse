@@ -4,9 +4,9 @@ import { useSignIn } from "@clerk/nextjs";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
-import { Button } from "./ui/button";
-import Google from "./brand-icons/google";
-import Apple from "./brand-icons/apple";
+import { Button } from "~/components/ui/button";
+import Google from "~/components/brand-icons/google";
+import Apple from "~/components/brand-icons/apple";
 import { Eye, EyeOff, Lock, User } from "lucide-react";
 import {
   Form,
@@ -15,8 +15,8 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from "./ui/form";
-import { Input } from "./ui/input";
+} from "~/components/ui/form";
+import { Input } from "~/components/ui/input";
 import { useState } from "react";
 import type { OAuthStrategy } from "@clerk/types";
 
