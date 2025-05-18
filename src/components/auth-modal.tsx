@@ -12,7 +12,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "./ui/tabs";
 import { z } from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useSignUp } from "@clerk/nextjs";
+import { useSignIn, useSignUp } from "@clerk/nextjs";
 import type { OAuthStrategy } from "@clerk/types";
 import { Button } from "./ui/button";
 import Google from "./brand-icons/google";
@@ -34,6 +34,7 @@ import {
   KeyRound,
   Lock,
   Mail,
+  User,
 } from "lucide-react";
 import { InputOTP, InputOTPGroup, InputOTPSlot } from "./ui/input-otp";
 import {
@@ -42,6 +43,11 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "./ui/tooltip";
+
+const signInSchema = z.object({
+  identifier: z.string().min(1, "Email or username is required"),
+  password: z.string().min(8, "Password must be at least 8 characters long"),
+});
 
 const signUpSchema = z
   .object({
@@ -64,10 +70,22 @@ const signUpSchema = z
 export default function AuthModal({ children }: { children: React.ReactNode }) {
   const [activeTab, setActiveTab] = useState("sign-in");
   const { isLoaded, signUp, setActive } = useSignUp();
+  const {
+    isLoaded: isSignInLoaded,
+    signIn,
+    setActive: signInSetActive,
+  } = useSignIn();
   const [isVerifying, setIsVerifying] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [code, setCode] = useState("");
   const [secondsTilResend, setSecondsTilResend] = useState(60);
+  const signInForm = useForm<z.infer<typeof signInSchema>>({
+    resolver: zodResolver(signInSchema),
+    defaultValues: {
+      identifier: "",
+      password: "",
+    },
+  });
   const signUpForm = useForm<z.infer<typeof signUpSchema>>({
     resolver: zodResolver(signUpSchema),
     defaultValues: {
@@ -102,6 +120,20 @@ export default function AuthModal({ children }: { children: React.ReactNode }) {
       setIsVerifying(true);
     } catch (err) {
       console.error("Error creating sign up:", err);
+    }
+  }
+
+  async function onSignInSubmit(values: z.infer<typeof signInSchema>) {
+    if (!isSignInLoaded) return;
+
+    try {
+      await signIn.create({
+        identifier: values.identifier,
+        password: values.password,
+      });
+      await signInSetActive({ session: signIn.createdSessionId });
+    } catch (err) {
+      console.error("Error signing in:", err);
     }
   }
 
@@ -161,6 +193,105 @@ export default function AuthModal({ children }: { children: React.ReactNode }) {
               Sign Up
             </TabsTrigger>
           </TabsList>
+          <TabsContent value="sign-in">
+            <div className="flex flex-col gap-4">
+              <div className="grid grid-cols-2 gap-2">
+                <Button
+                  variant="outline"
+                  className="w-full"
+                  onClick={() => signInWith("oauth_google")}
+                >
+                  <Google fill="white" className="mr-2 h-4 w-4" />
+                  Google
+                </Button>
+                <Button
+                  variant="outline"
+                  className="w-full"
+                  onClick={() => signInWith("oauth_apple")}
+                >
+                  <Apple fill="white" className="mr-2 h-4 w-4" />
+                  Apple
+                </Button>
+              </div>
+              <div className="relative mb-4">
+                <div className="absolute inset-0 flex items-center">
+                  <span className="w-full border-t" />
+                </div>
+                <div className="relative flex justify-center text-xs uppercase">
+                  <span className="bg-background text-muted-foreground px-2">
+                    Or continue with
+                  </span>
+                </div>
+              </div>
+            </div>
+            <Form {...signInForm}>
+              <form
+                onSubmit={signInForm.handleSubmit(onSignInSubmit)}
+                className="space-y-4"
+              >
+                <FormField
+                  control={signInForm.control}
+                  name="identifier"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Email or username</FormLabel>
+                      <FormControl>
+                        <div className="relative">
+                          <User className="text-muted-foreground absolute top-1/2 left-3 size-4 -translate-y-1/2" />
+                          <Input
+                            placeholder="yourname@domain.org"
+                            className="pl-10"
+                            {...field}
+                          />
+                        </div>
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <div className="flex flex-col">
+                  <FormField
+                    control={signInForm.control}
+                    name="password"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Password</FormLabel>
+                        <FormControl>
+                          <div className="relative">
+                            <Lock className="text-muted-foreground absolute top-1/2 left-3 size-4 -translate-y-1/2" />
+                            <Input
+                              type={showPassword ? "text" : "password"}
+                              placeholder="myawesomepassword"
+                              className="pl-10"
+                              {...field}
+                            />
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="icon"
+                              className="absolute top-1/2 right-2 -translate-y-1/2"
+                              onClick={() => setShowPassword(!showPassword)}
+                            >
+                              {showPassword ? (
+                                <EyeOff className="size-4" />
+                              ) : (
+                                <Eye className="size-4" />
+                              )}
+                            </Button>
+                          </div>
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <Button className="self-end" variant="link">
+                    Forgot password?
+                  </Button>
+                </div>
+                <Button className="w-full">Sign In</Button>
+              </form>
+            </Form>
+          </TabsContent>
           <TabsContent value="sign-up">
             {!isVerifying && (
               <>
