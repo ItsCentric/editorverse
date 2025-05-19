@@ -3,7 +3,7 @@
 import { Button } from "~/components/ui/button";
 import Google from "~/components/brand-icons/google";
 import Apple from "~/components/brand-icons/apple";
-import { Eye, EyeOff, LoaderCircle, Lock } from "lucide-react";
+import { Eye, EyeOff, LoaderCircle, Lock, User } from "lucide-react";
 import { Input } from "~/components/ui/input";
 import * as SignIn from "@clerk/elements/sign-in";
 import * as Clerk from "@clerk/elements/common";
@@ -80,9 +80,15 @@ export default function SignInTab() {
                   <Clerk.Label asChild>
                     <Label>Email or username</Label>
                   </Clerk.Label>
-                  <Clerk.Input required asChild>
-                    <Input placeholder="yourname@domain.org" />
-                  </Clerk.Input>
+                  <div className="relative">
+                    <User className="text-muted-foreground absolute top-1/2 left-3 size-4 -translate-y-1/2" />
+                    <Clerk.Input required asChild>
+                      <Input
+                        placeholder="yourname@domain.org"
+                        className="pl-10"
+                      />
+                    </Clerk.Input>
+                  </div>
                   <Clerk.FieldError className="text-destructive block text-sm" />
                 </Clerk.Field>
                 <Clerk.Field name="password" className="space-y-2">

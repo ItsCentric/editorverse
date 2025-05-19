@@ -13,6 +13,7 @@ import {
   KeyRound,
   LoaderCircle,
   Lock,
+  Mail,
 } from "lucide-react";
 import { Input } from "~/components/ui/input";
 import {
@@ -94,9 +95,15 @@ export default function SignUpTab() {
                   <Clerk.Label asChild>
                     <Label>Email</Label>
                   </Clerk.Label>
-                  <Clerk.Input required asChild>
-                    <Input placeholder="yourname@domain.org" />
-                  </Clerk.Input>
+                  <div className="relative">
+                    <Mail className="text-muted-foreground absolute top-1/2 left-3 size-4 -translate-y-1/2" />
+                    <Clerk.Input type="email" required asChild>
+                      <Input
+                        placeholder="yourname@domain.org"
+                        className="pl-10"
+                      />
+                    </Clerk.Input>
+                  </div>
                   <Clerk.FieldError className="text-destructive block text-sm" />
                 </Clerk.Field>
                 <Clerk.Field name="password" className="space-y-2">
