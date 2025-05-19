@@ -7,7 +7,7 @@
  * need to use are documented accordingly near the end.
  */
 import { auth } from "@clerk/nextjs/server";
-import { initTRPC } from "@trpc/server";
+import { initTRPC, TRPCError } from "@trpc/server";
 import { cache } from "react";
 import superjson from "superjson";
 import { ZodError } from "zod";
@@ -98,6 +98,17 @@ const timingMiddleware = t.middleware(async ({ next, path }) => {
   return result;
 });
 
+const isAuthed = t.middleware(({ next, ctx }) => {
+  if (!ctx.auth.userId) {
+    throw new TRPCError({ code: "UNAUTHORIZED" });
+  }
+  return next({
+    ctx: {
+      auth: ctx.auth,
+    },
+  });
+});
+
 /**
  * Public (unauthenticated) procedure
  *
@@ -106,3 +117,6 @@ const timingMiddleware = t.middleware(async ({ next, path }) => {
  * are logged in.
  */
 export const publicProcedure = t.procedure.use(timingMiddleware);
+export const protectedProcedure = t.procedure
+  .use(isAuthed)
+  .use(timingMiddleware);
