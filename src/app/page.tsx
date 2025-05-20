@@ -1,8 +1,6 @@
 import Link from "next/link";
 
 import { HydrateClient } from "~/trpc/server";
-import Greeting from "./_components/greeting";
-import { LatestPost } from "./_components/post";
 
 export default async function Home() {
   return (
@@ -35,10 +33,6 @@ export default async function Home() {
                 to deploy it.
               </div>
             </Link>
-          </div>
-          <div className="flex flex-col items-center gap-2">
-            <Greeting />
-            <LatestPost />
           </div>
         </div>
       </main>
