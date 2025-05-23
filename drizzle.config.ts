@@ -9,4 +9,5 @@ export default {
     url: env.DATABASE_URL,
   },
   tablesFilter: ["editorverse_*"],
+  casing: "snake_case",
 } satisfies Config;
