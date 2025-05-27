@@ -26,6 +26,7 @@ import {
 } from "~/components/ui/dropdown-menu";
 import AuthModal from "./auth-modal";
 import { dark } from "@clerk/themes";
+import OnSignIn from "./_components/on-sign-in";
 
 export const metadata: Metadata = {
   title: "Editorverse",
@@ -109,6 +110,7 @@ export default function RootLayout({
                         </DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>
+                    <OnSignIn />
                     <UserButton
                       appearance={{
                         elements: {
