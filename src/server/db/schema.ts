@@ -9,11 +9,11 @@ import {
 import { timestamps } from "./columns.helpers";
 
 export const users = pgTable("users", (d) => ({
-  id: d.uuid().primaryKey(),
+  id: d.uuid().primaryKey().defaultRandom(),
   ...timestamps,
-  clerkId: d.text().notNull(),
-  username: d.text().notNull(),
-  email: d.text().notNull(),
+  clerkId: d.text().notNull().unique(),
+  username: d.text().notNull().unique(),
+  email: d.text().notNull().unique(),
 }));
 
 export const postTypeEnum = pgEnum("post_types", [
@@ -89,7 +89,7 @@ export const postInspirations = pgTable(
 export const categories = pgTable("categories", (d) => ({
   id: d.uuid().primaryKey().defaultRandom(),
   ...timestamps,
-  name: d.text().notNull(),
+  name: d.text().notNull().unique(),
 }));
 
 export const postCategories = pgTable("post_categories", (d) => ({
