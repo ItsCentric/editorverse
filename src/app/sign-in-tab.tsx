@@ -14,7 +14,7 @@ export default function SignInTab() {
   const [showPassword, setShowPassword] = useState(false);
 
   return (
-    <SignIn.Root>
+    <SignIn.Root routing="virtual">
       <Clerk.Loading>
         {(isGlobalLoading) => (
           <>

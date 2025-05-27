@@ -29,7 +29,7 @@ export default function SignUpTab() {
   const [showPassword, setShowPassword] = useState(false);
 
   return (
-    <SignUp.Root>
+    <SignUp.Root routing="virtual">
       <Clerk.Loading>
         {(isGlobalLoading) => (
           <>
