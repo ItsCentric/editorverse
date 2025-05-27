@@ -11,6 +11,11 @@ export const env = createEnv({
     NODE_ENV: z
       .enum(["development", "test", "production"])
       .default("development"),
+    B2_KEY_ID: z.string(),
+    B2_APP_KEY: z.string(),
+    B2_BUCKET: z.string(),
+    B2_REGION: z.string(),
+    CDN_URL: z.string().url(),
   },
 
   /**
@@ -29,7 +34,11 @@ export const env = createEnv({
   runtimeEnv: {
     DATABASE_URL: process.env.DATABASE_URL,
     NODE_ENV: process.env.NODE_ENV,
-    // NEXT_PUBLIC_CLIENTVAR: process.env.NEXT_PUBLIC_CLIENTVAR,
+    B2_KEY_ID: process.env.B2_KEY_ID,
+    B2_APP_KEY: process.env.B2_APP_KEY,
+    B2_BUCKET: process.env.B2_BUCKET,
+    B2_REGION: process.env.B2_REGION,
+    CDN_URL: process.env.CDN_URL,
   },
   /**
    * Run `build` or `dev` with `SKIP_ENV_VALIDATION` to skip env validation. This is especially

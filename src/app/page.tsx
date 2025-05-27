@@ -1,6 +1,7 @@
 import Link from "next/link";
 
 import { HydrateClient } from "~/trpc/server";
+import CreatePostModal from "./_components/create-post-modal";
 
 export default async function Home() {
   return (

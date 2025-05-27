@@ -26,6 +26,8 @@ import {
 } from "~/components/ui/dropdown-menu";
 import AuthModal from "./auth-modal";
 import { dark } from "@clerk/themes";
+import CreatePostModal from "./_components/create-post-modal";
+import { Toaster } from "sonner";
 import OnSignIn from "./_components/on-sign-in";
 
 export const metadata: Metadata = {
@@ -88,29 +90,13 @@ export default function RootLayout({
                 </div>
                 <SignedIn>
                   <div className="hidden items-center gap-4 md:flex">
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <SpecialButton size="lg">
-                          <PlusSquare className="size-4" />
-                          <p>Create</p>
-                        </SpecialButton>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent className="mt-1">
-                        <DropdownMenuItem>
-                          <Video className="size-4" />
-                          <p>Video Post</p>
-                        </DropdownMenuItem>
-                        <DropdownMenuItem>
-                          <UserPlus className="size-4" />
-                          <p>Recruiting Post</p>
-                        </DropdownMenuItem>
-                        <DropdownMenuItem>
-                          <UsersRound className="size-4" />
-                          <p>Collab Post</p>
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
                     <OnSignIn />
+                    <CreatePostModal>
+                      <SpecialButton size="lg">
+                        <PlusSquare className="size-4" />
+                        <p>Create</p>
+                      </SpecialButton>
+                    </CreatePostModal>
                     <UserButton
                       appearance={{
                         elements: {
@@ -191,6 +177,7 @@ export default function RootLayout({
                 </SignedOut>
               </div>
             </nav>
+            <Toaster />
           </TRPCReactProvider>
         </ClerkProvider>
       </body>
