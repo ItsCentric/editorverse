@@ -127,30 +127,14 @@ export default function RootLayout({
                 <NavButton href="/search" size="icon">
                   <Search className="size-6" />
                 </NavButton>
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button
-                      className="hover:text-foreground bg-transparent"
-                      size="icon"
-                    >
-                      <PlusSquare className="text-muted-foreground size-6" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent className="mb-1">
-                    <DropdownMenuItem>
-                      <Video className="size-4" />
-                      <p>Video Post</p>
-                    </DropdownMenuItem>
-                    <DropdownMenuItem>
-                      <UserPlus className="size-4" />
-                      <p>Recruiting Post</p>
-                    </DropdownMenuItem>
-                    <DropdownMenuItem>
-                      <UsersRound className="size-4" />
-                      <p>Collab Post</p>
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
+                <CreatePostModal>
+                  <Button
+                    size="icon"
+                    className="hover:text-foreground bg-transparent"
+                  >
+                    <PlusSquare className="text-muted-foreground size-6" />
+                  </Button>
+                </CreatePostModal>
                 <NavButton href="/messages" size="icon">
                   <MessageCircle className="size-6" />
                 </NavButton>
