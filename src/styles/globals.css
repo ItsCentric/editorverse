@@ -107,7 +107,7 @@
     --destructive-foreground: oklch(19.63% 0.052 312.04);
     --border: oklch(28% 0.05 314.62);
     --input: oklch(16.93% 0.036 314.62);
-    --ring: oklch(76.51% 0.147 63.7);
+    --ring: oklch(55% 0.27 260);
   }
 }
 
@@ -117,5 +117,9 @@
   }
   body {
     @apply bg-background text-foreground;
+  }
+
+  media-controller {
+    container-type: size;
   }
 }

@@ -2,17 +2,24 @@ import { createSelectSchema } from "drizzle-zod";
 import {
   artistCredits,
   categories,
+  likes,
   postCategories,
   postDedications,
   postInspirations,
   posts,
   postTypeEnum,
+  users,
 } from "~/server/db/schema";
 import { createTRPCRouter, protectedProcedure, publicProcedure } from "../trpc";
 import { z } from "zod/v4";
-import { currentUser } from "@clerk/nextjs/server";
-import { ilike, inArray } from "drizzle-orm";
+import { clerkClient, currentUser } from "@clerk/nextjs/server";
+import { and, desc, eq, ilike, inArray, lt, or, sql } from "drizzle-orm";
 
+export const postsSchema = createSelectSchema(posts);
+export const usersSchema = createSelectSchema(users);
+export const postDedicationsSchema = createSelectSchema(postDedications);
+export const postCategoriesSchema = createSelectSchema(postCategories);
+export const categoriesSchema = createSelectSchema(categories);
 const postTypeEnumSchema = createSelectSchema(postTypeEnum);
 
 const emptyStringToUndefined = z.preprocess((val) => {
@@ -105,7 +112,7 @@ export const postRouter = createTRPCRouter({
           categoryId,
         }));
         await tx.insert(postCategories).values(postCategoryData);
-        if (input.dedicatedToUserIds) {
+        if (input.dedicatedToUserIds && input.dedicatedToUserIds.length > 0) {
           const data = input.dedicatedToUserIds.map((userId) => ({
             postId: insertedPostId,
             dedicatedToUserId: userId,
@@ -113,7 +120,10 @@ export const postRouter = createTRPCRouter({
           }));
           await tx.insert(postDedications).values(data);
         }
-        if (input.specialDedicatedToUserIds) {
+        if (
+          input.specialDedicatedToUserIds &&
+          input.specialDedicatedToUserIds.length > 0
+        ) {
           const data = input.specialDedicatedToUserIds.map((userId) => ({
             postId: insertedPostId,
             dedicatedToUserId: userId,
@@ -121,14 +131,14 @@ export const postRouter = createTRPCRouter({
           }));
           await tx.insert(postDedications).values(data);
         }
-        if (input.inspiredByUserIds) {
+        if (input.inspiredByUserIds && input.inspiredByUserIds.length > 0) {
           const data = input.inspiredByUserIds.map((userId) => ({
             postId: insertedPostId,
             inspiredByUserId: userId,
           }));
           await tx.insert(postInspirations).values(data);
         }
-        if (input.artCredits) {
+        if (input.artCredits && input.artCredits.length > 0) {
           if (!input.musicTitle || !input.musicArtist) {
             throw new Error("Both music title and artist must be provided");
           }
@@ -152,5 +162,114 @@ export const postRouter = createTRPCRouter({
         .where(ilike(categories.name, `%${input}%`))
         .limit(10);
       return searchResults;
+    }),
+
+  getPosts_TESTING: publicProcedure
+    .input(
+      z.object({
+        cursor: z.object({ id: z.string(), createdAt: z.date() }).optional(),
+        limit: z.number().default(10),
+      }),
+    )
+    .query(async ({ ctx, input }) => {
+      console.warn(
+        "\x1b[43m",
+        "\x1b[30m",
+        "`getPosts_TESTING` is a test endpoint and should not be used in production.",
+        "\x1b[0m",
+      );
+      const { db } = ctx;
+      const items = await db.query.posts.findMany({
+        where: input.cursor
+          ? or(
+              lt(posts.createdAt, input.cursor.createdAt),
+              and(
+                eq(posts.createdAt, input.cursor.createdAt),
+                lt(posts.id, input.cursor.id),
+              ),
+            )
+          : undefined,
+        with: {
+          dedications: { with: { user: true } },
+          author: true,
+          categories: { with: { category: true } },
+          inspirations: { with: { user: true } },
+          artCredits: true,
+          remadePost: true,
+          comments: true,
+        },
+        extras: {
+          likeCount:
+            sql<number>`(SELECT COUNT(*) FROM ${likes} WHERE ${likes}.post_id = ${posts}.id)`
+              .mapWith(Number)
+              .as("likeCount"),
+        },
+        orderBy: desc(posts.createdAt),
+        limit: input.limit,
+      });
+      const clerkIdSet = new Set<string>();
+      for (const item of items) {
+        clerkIdSet.add(item.author.clerkId);
+        for (const dedication of item.dedications) {
+          clerkIdSet.add(dedication.user.clerkId);
+        }
+        for (const inspiration of item.inspirations) {
+          clerkIdSet.add(inspiration.user.clerkId);
+        }
+      }
+      const clerk = await clerkClient();
+      const { data: clerkUsers } = await clerk.users.getUserList({
+        userId: Array.from(clerkIdSet),
+      });
+      const clerkMap = new Map(
+        clerkUsers.map((user) => [user.id, user.imageUrl]),
+      );
+      const mappedItems = items.map((item) => {
+        const authorAvatar = clerkMap.get(item.author.clerkId);
+        if (!authorAvatar)
+          throw new Error("Could not map clerk user to database user (author)");
+        const dedicationAvatar = clerkMap.get(item.author.clerkId);
+        if (!dedicationAvatar)
+          throw new Error(
+            "Could not map clerk user to database user (dedication)",
+          );
+        const inspirationAvatar = clerkMap.get(item.author.clerkId);
+        if (!inspirationAvatar)
+          throw new Error(
+            "Could not map clerk user to database user (inspiration)",
+          );
+        return {
+          ...item,
+          author: {
+            ...item.author,
+            imageUrl: authorAvatar,
+          },
+          dedications: item.dedications.map((dedication) => ({
+            ...dedication,
+            user: {
+              ...dedication.user,
+              imageUrl: dedicationAvatar,
+            },
+          })),
+          inspirations: item.inspirations.map((inspiration) => ({
+            ...inspiration,
+            user: {
+              ...inspiration.user,
+              imageUrl: inspirationAvatar,
+            },
+          })),
+        };
+      });
+      const nextCursor =
+        mappedItems.length === input.limit
+          ? mappedItems[mappedItems.length - 1]
+          : undefined;
+
+      return {
+        nextCursor: nextCursor
+          ? { id: nextCursor.id, createdAt: nextCursor.createdAt }
+          : undefined,
+        items: mappedItems,
+      };
     }),
 });
