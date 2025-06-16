@@ -1,8 +1,11 @@
 import z from "zod/v4";
 import { createTRPCRouter, publicProcedure } from "../trpc";
-import { users } from "~/server/db/schema";
-import { and, ilike, inArray, ne } from "drizzle-orm";
+import { userFollows, users } from "~/server/db/schema";
+import { and, ilike, inArray, ne, eq, aliasedTable } from "drizzle-orm";
 import { clerkClient } from "@clerk/nextjs/server";
+
+const followersTable = aliasedTable(users, "followers");
+const followingTable = aliasedTable(users, "following");
 
 export const userRouter = createTRPCRouter({
   createUser: publicProcedure
@@ -53,9 +56,88 @@ export const userRouter = createTRPCRouter({
     .query(async ({ ctx, input }) => {
       const { db } = ctx;
       const usersByUsername = await db
-        .select({ id: users.id, username: users.username })
+        .select()
         .from(users)
         .where(inArray(users.username, input));
-      return usersByUsername;
+      const clerk = await clerkClient();
+      const clerkIds = usersByUsername.map((user) => user.clerkId);
+      const { data: clerkUsers } = await clerk.users.getUserList({
+        userId: clerkIds,
+      });
+      return usersByUsername.map((user) => {
+        const clerkUser = clerkUsers.find((c) => c.id === user.clerkId);
+        if (!clerkUser) throw new Error("Clerk user not found");
+        return {
+          ...user,
+          avatarUrl: clerkUser.imageUrl,
+          bio: clerkUser.publicMetadata?.bio as string | undefined,
+        };
+      });
+    }),
+
+  getFollowersByUsername: publicProcedure
+    .input(z.string())
+    .query(async ({ ctx, input }) => {
+      const { db } = ctx;
+      const followers = await db
+        .select({ user: followersTable })
+        .from(userFollows)
+        .innerJoin(
+          followersTable,
+          eq(followersTable.id, userFollows.followerId),
+        )
+        .innerJoin(
+          followingTable,
+          eq(followingTable.id, userFollows.followedId),
+        )
+        .where(eq(followingTable.username, input));
+      const followerClerkIds = followers.map((follow) => follow.user.clerkId);
+      const clerk = await clerkClient();
+      const { data: clerkUsers } = await clerk.users.getUserList({
+        userId: followerClerkIds,
+      });
+      return followers.map((follower) => {
+        const clerkUser = clerkUsers.find(
+          (c) => c.id === follower.user.clerkId,
+        );
+        if (!clerkUser) throw new Error("Clerk user not found");
+
+        return {
+          username: follower.user.username,
+          imageUrl: clerkUser.imageUrl,
+        };
+      });
+    }),
+
+  getFollowingByUsername: publicProcedure
+    .input(z.string())
+    .query(async ({ ctx, input }) => {
+      const { db } = ctx;
+      const following = await db
+        .select({ user: followingTable })
+        .from(userFollows)
+        .innerJoin(
+          followersTable,
+          eq(followersTable.id, userFollows.followerId),
+        )
+        .innerJoin(
+          followingTable,
+          eq(followingTable.id, userFollows.followedId),
+        )
+        .where(eq(followersTable.username, input));
+      const followingClerkIds = following.map((follow) => follow.user.clerkId);
+      const clerk = await clerkClient();
+      const { data: clerkUsers } = await clerk.users.getUserList({
+        userId: followingClerkIds,
+      });
+      return following.map((follow) => {
+        const clerkUser = clerkUsers.find((c) => c.id === follow.user.clerkId);
+        if (!clerkUser) throw new Error("Clerk user not found");
+
+        return {
+          username: follow.user.username,
+          imageUrl: clerkUser.imageUrl,
+        };
+      });
     }),
 });

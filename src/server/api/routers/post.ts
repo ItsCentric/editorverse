@@ -21,6 +21,16 @@ export const postDedicationsSchema = createSelectSchema(postDedications);
 export const postCategoriesSchema = createSelectSchema(postCategories);
 export const categoriesSchema = createSelectSchema(categories);
 const postTypeEnumSchema = createSelectSchema(postTypeEnum);
+const cursorSchema = z
+  .object({ id: z.string(), createdAt: z.date() })
+  .optional();
+const cursorFilter = (cursor: z.infer<typeof cursorSchema>) =>
+  cursor
+    ? or(
+        lt(posts.createdAt, cursor.createdAt),
+        and(eq(posts.createdAt, cursor.createdAt), lt(posts.id, cursor.id)),
+      )
+    : undefined;
 
 const emptyStringToUndefined = z.preprocess((val) => {
   if (typeof val === "string" && val.trim() === "") {
@@ -37,6 +47,20 @@ const emptyUuidToUndefined = z.preprocess((val) => {
     return val;
   }
 }, z.uuid().optional());
+
+const getAvatars = async (clerkIds: string[]) => {
+  const clerkIdSet = new Set<string>();
+  for (const clerkId of clerkIds) {
+    clerkIdSet.add(clerkId);
+  }
+  const clerk = await clerkClient();
+  const { data: clerkUsers } = await clerk.users.getUserList({
+    userId: Array.from(clerkIdSet),
+  });
+  const clerkMap = new Map(clerkUsers.map((user) => [user.id, user.imageUrl]));
+
+  return clerkMap;
+};
 
 const createPostInputSchema = z.object({
   videoUrl: z.url().min(1, "Video URL is missing"),
@@ -167,7 +191,7 @@ export const postRouter = createTRPCRouter({
   getPosts_TESTING: publicProcedure
     .input(
       z.object({
-        cursor: z.object({ id: z.string(), createdAt: z.date() }).optional(),
+        cursor: cursorSchema,
         limit: z.number().default(10),
       }),
     )
@@ -180,15 +204,7 @@ export const postRouter = createTRPCRouter({
       );
       const { db } = ctx;
       const items = await db.query.posts.findMany({
-        where: input.cursor
-          ? or(
-              lt(posts.createdAt, input.cursor.createdAt),
-              and(
-                eq(posts.createdAt, input.cursor.createdAt),
-                lt(posts.id, input.cursor.id),
-              ),
-            )
-          : undefined,
+        where: cursorFilter(input.cursor),
         with: {
           dedications: { with: { user: true } },
           author: true,
@@ -207,22 +223,12 @@ export const postRouter = createTRPCRouter({
         orderBy: desc(posts.createdAt),
         limit: input.limit,
       });
-      const clerkIdSet = new Set<string>();
-      for (const item of items) {
-        clerkIdSet.add(item.author.clerkId);
-        for (const dedication of item.dedications) {
-          clerkIdSet.add(dedication.user.clerkId);
-        }
-        for (const inspiration of item.inspirations) {
-          clerkIdSet.add(inspiration.user.clerkId);
-        }
-      }
-      const clerk = await clerkClient();
-      const { data: clerkUsers } = await clerk.users.getUserList({
-        userId: Array.from(clerkIdSet),
-      });
-      const clerkMap = new Map(
-        clerkUsers.map((user) => [user.id, user.imageUrl]),
+      const clerkMap = await getAvatars(
+        items.flatMap((item) => [
+          item.author.clerkId,
+          ...item.dedications.map((dedication) => dedication.user.clerkId),
+          ...item.inspirations.map((inspiration) => inspiration.user.clerkId),
+        ]),
       );
       const mappedItems = items.map((item) => {
         const authorAvatar = clerkMap.get(item.author.clerkId);
@@ -272,4 +278,115 @@ export const postRouter = createTRPCRouter({
         items: mappedItems,
       };
     }),
+
+  getPostsByUsername: publicProcedure
+    .input(
+      z.object({
+        username: z.string(),
+        cursor: cursorSchema,
+        limit: z.number().default(9),
+      }),
+    )
+    .query(async ({ ctx, input }) => {
+      const { db } = ctx;
+      const { username, cursor } = input;
+
+      const userPosts = await db
+        .select({ id: posts.id, createdAt: posts.createdAt })
+        .from(posts)
+        .innerJoin(users, eq(users.id, posts.authorId))
+        .where(and(eq(users.username, username), cursorFilter(cursor)))
+        .orderBy(desc(posts.createdAt))
+        .limit(input.limit);
+
+      return {
+        items: userPosts,
+        nextCursor:
+          userPosts.length === input.limit
+            ? userPosts[userPosts.length - 1]
+            : undefined,
+      };
+    }),
+
+  getPostById: publicProcedure.input(z.uuid()).query(async ({ ctx, input }) => {
+    const { db } = ctx;
+    const post = await db.query.posts.findFirst({
+      where: eq(posts.id, input),
+      with: {
+        dedications: { with: { user: true } },
+        author: true,
+        categories: { with: { category: true } },
+        inspirations: { with: { user: true } },
+        artCredits: true,
+        remadePost: true,
+        comments: { with: { author: true } },
+      },
+      extras: {
+        likeCount:
+          sql<number>`(SELECT COUNT(*) FROM ${likes} WHERE ${likes}.post_id = ${posts}.id)`
+            .mapWith(Number)
+            .as("likeCount"),
+      },
+      orderBy: desc(posts.createdAt),
+    });
+    if (!post) throw new Error("Post not found");
+    const clerkMap = await getAvatars([
+      post.author.clerkId,
+      ...post.dedications.map((dedication) => dedication.user.clerkId),
+      ...post.inspirations.map((inspiration) => inspiration.user.clerkId),
+      ...post.comments.map((comment) => comment.author.clerkId),
+    ]);
+    const authorAvatar = clerkMap.get(post.author.clerkId);
+    if (!authorAvatar)
+      throw new Error("Could not map clerk user to database user (author)");
+    return {
+      ...post,
+      author: {
+        ...post.author,
+        imageUrl: authorAvatar,
+      },
+      dedications: post.dedications.map((dedication) => {
+        const imageUrl = clerkMap.get(dedication.user.clerkId);
+        if (!imageUrl)
+          throw new Error(
+            "Could not map clerk user to database user (dedication)",
+          );
+        return {
+          ...dedication,
+          user: {
+            ...dedication.user,
+            imageUrl,
+          },
+        };
+      }),
+      inspirations: post.inspirations.map((inspiration) => {
+        const imageUrl = clerkMap.get(inspiration.user.clerkId);
+        if (!imageUrl)
+          throw new Error(
+            "Could not map clerk user to database user (inspiration)",
+          );
+        return {
+          ...inspiration,
+          user: {
+            ...inspiration.user,
+            imageUrl,
+          },
+        };
+      }),
+      comments: post.comments.map((comment) => {
+        const imageUrl = clerkMap.get(comment.author.clerkId);
+        if (!imageUrl)
+          throw new Error(
+            "Could not map clerk user to database user (comment author)",
+          );
+        return {
+          ...comment,
+          author: {
+            ...comment.author,
+            imageUrl,
+          },
+        };
+      }),
+    };
+  }),
 });

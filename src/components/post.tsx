@@ -12,7 +12,6 @@ import {
   MessageCircleMore,
   Send,
 } from "lucide-react";
-import { useCallback, useContext, useState } from "react";
 import { Input } from "./ui/input";
 import {
   DropdownMenu,
@@ -22,10 +21,9 @@ import {
   DropdownMenuTrigger,
 } from "./ui/dropdown-menu";
 import UserLink from "./user-link";
-import Player from "next-video/player";
-import Instaplay from "player.style/instaplay/react";
 import { Skeleton } from "./ui/skeleton";
-import { CurrentVideoContext } from "~/app/_components/feed";
+import VideoPlayer from "./video-player";
+import PostModal from "~/app/[username]/post-modal";
 
 type PostProps =
   | {
@@ -35,31 +33,6 @@ type PostProps =
   | { data?: never; isLoading: true };
 
 export default function Post({ data, isLoading }: PostProps) {
-  const [aspectClass, setAspectClass] = useState("aspect-video");
-  const { currentVideo, setCurrentVideo } = useContext(CurrentVideoContext);
-  const onLoadedMetadata = useCallback(
-    (e: React.SyntheticEvent<HTMLVideoElement>) => {
-      const video = e.currentTarget;
-      const ratio = video.videoWidth / video.videoHeight;
-
-      const targets: { ratio: number; cls: string }[] = [
-        { ratio: 1, cls: "aspect-square" },
-        { ratio: 16 / 9, cls: "aspect-video" },
-        { ratio: 4 / 3, cls: "aspect-[4/3]" },
-        { ratio: 3 / 4, cls: "aspect-[3/4]" },
-      ];
-
-      const { cls } = targets.reduce((closest, curr) => {
-        const currDiff = Math.abs(ratio - curr.ratio);
-        const bestDiff = Math.abs(ratio - closest.ratio);
-        return currDiff < bestDiff ? curr : closest;
-      });
-
-      setAspectClass(cls);
-    },
-    [],
-  );
-
   if (isLoading) {
     return (
       <div className="border-t-2 p-4 md:rounded-lg md:border-2">
@@ -178,21 +151,7 @@ export default function Post({ data, isLoading }: PostProps) {
       </div>
       <div className="mb-4">
         <p className="mb-3 text-sm">{data.caption}</p>
-        <div className="relative overflow-hidden rounded-sm bg-black">
-          <Player
-            id={data.id}
-            src={data.videoUrl}
-            className={`container size-full object-contain ${aspectClass}`}
-            onLoadedMetadata={onLoadedMetadata}
-            theme={Instaplay}
-            style={{ "--media-accent-color": "var(--primary)" }}
-            onPlay={(e) => {
-              if (!setCurrentVideo || currentVideo?.id === data.id) return;
-              if (currentVideo) currentVideo.pause();
-              setCurrentVideo(e.currentTarget);
-            }}
-          />
-        </div>
+        <VideoPlayer id={data.id} src={data.videoUrl} />
       </div>
       {hasAnyCreditsOrTags && (
         <div className="bg-muted/50 text-muted-foreground mb-4 space-y-2 rounded-lg p-3 text-sm">
@@ -283,12 +242,14 @@ export default function Post({ data, isLoading }: PostProps) {
       </div>
       <p className="mb-1 text-sm font-semibold">{data.likeCount} likes</p>
       {data.comments.length > 0 ? (
-        <Button
-          variant="link"
-          className="text-muted-foreground mb-2 size-fit p-0"
-        >
-          View all {data.comments.length} comments
-        </Button>
+        <PostModal postId={data.id} asChild>
+          <Button
+            variant="link"
+            className="text-muted-foreground mb-2 size-fit p-0"
+          >
+            View all {data.comments.length} comments
+          </Button>
+        </PostModal>
       ) : (
         <p className="text-muted-foreground mb-2 text-sm font-medium">
           No comments yet

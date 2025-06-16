@@ -298,6 +298,17 @@ export const userFollows = pgTable(
   ],
 );
 
+export const userFollowRelations = relations(userFollows, ({ one }) => ({
+  follower: one(users, {
+    fields: [userFollows.followerId],
+    references: [users.id],
+  }),
+  followed: one(users, {
+    fields: [userFollows.followedId],
+    references: [users.id],
+  }),
+}));
+
 export const userBlocks = pgTable(
   "user_blocks",
   (d) => ({

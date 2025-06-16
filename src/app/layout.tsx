@@ -7,28 +7,15 @@ import { ClerkProvider, SignedIn, SignedOut, UserButton } from "@clerk/nextjs";
 import { TRPCReactProvider } from "~/trpc/react";
 import Link from "next/link";
 import { Button } from "~/components/ui/button";
-import {
-  House,
-  LogIn,
-  MessageCircle,
-  PlusSquare,
-  Search,
-  UserPlus,
-  UsersRound,
-  Video,
-} from "lucide-react";
+import { House, LogIn, MessageCircle, PlusSquare, Search } from "lucide-react";
 import NavButton from "./nav-button";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "~/components/ui/dropdown-menu";
 import AuthModal from "./auth-modal";
 import { dark } from "@clerk/themes";
 import CreatePostModal from "./_components/create-post-modal";
 import { Toaster } from "sonner";
 import OnSignIn from "./_components/on-sign-in";
+import { currentUser } from "@clerk/nextjs/server";
+import { Avatar, AvatarFallback, AvatarImage } from "~/components/ui/avatar";
 
 export const metadata: Metadata = {
   title: "Editorverse",
@@ -59,12 +46,13 @@ function SpecialButton({
   );
 }
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
+  const user = await currentUser();
   return (
     <html lang="en" className={`${lexendDeca.variable} ${readexPro.variable}`}>
-      <body className="dark">
+      <body className="dark flex min-h-screen flex-col">
         <ClerkProvider appearance={{ baseTheme: dark }}>
           <TRPCReactProvider>
             <nav className="bg-background supports-[backdrop-filter]:bg-background/80 sticky top-0 z-50 w-full border-b py-4 backdrop-blur-md md:top-0">
@@ -97,15 +85,20 @@ export default function RootLayout({
                         <p>Create</p>
                       </SpecialButton>
                     </CreatePostModal>
-                    <UserButton
-                      appearance={{
-                        elements: {
-                          rootBox: "!size-9",
-                          userButtonAvatarBox: "!w-full !h-full",
-                          userButtonTrigger: "!w-full !h-full",
-                        },
-                      }}
-                    />
+                    <Button variant="link" size="icon" asChild>
+                      <Link href={`/${user?.username}`}>
+                        <Avatar className="!size-9 flex-1">
+                          <AvatarImage
+                            src={user?.imageUrl}
+                            alt={user?.username}
+                            className="flex-1"
+                          />
+                          <AvatarFallback>
+                            {user?.username?.charAt(0).toUpperCase()}
+                          </AvatarFallback>
+                        </Avatar>
+                      </Link>
+                    </Button>
                   </div>
                 </SignedIn>
                 <SignedOut>
@@ -118,7 +111,7 @@ export default function RootLayout({
                 </SignedOut>
               </div>
             </nav>
-            <main>{children}</main>
+            <main className="flex-1">{children}</main>
             <nav className="bg-background supports-[backdrop-filter]:bg-background/80 sticky bottom-0 z-50 w-full border-t py-4 backdrop-blur-md md:hidden">
               <div className="flex items-center justify-around">
                 <NavButton href="/" size="icon">
@@ -139,15 +132,20 @@ export default function RootLayout({
                   <MessageCircle className="size-6" />
                 </NavButton>
                 <SignedIn>
-                  <UserButton
-                    appearance={{
-                      elements: {
-                        rootBox: "!size-7",
-                        userButtonAvatarBox: "!w-full !h-full",
-                        userButtonTrigger: "!w-full !h-full",
-                      },
-                    }}
-                  />
+                  <Button variant="link" size="icon" asChild>
+                    <Link href={`/${user?.username}`}>
+                      <Avatar className="!size-9 flex-1">
+                        <AvatarImage
+                          src={user?.imageUrl}
+                          alt={user?.username}
+                          className="flex-1"
+                        />
+                        <AvatarFallback>
+                          {user?.username?.charAt(0).toUpperCase()}
+                        </AvatarFallback>
+                      </Avatar>
+                    </Link>
+                  </Button>
                 </SignedIn>
                 <SignedOut>
                   <AuthModal>
