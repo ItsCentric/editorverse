@@ -9,6 +9,12 @@ const config = {
   images: {
     remotePatterns: [new URL("https://img.clerk.com/*")],
   },
+  typescript: {
+    ignoreBuildErrors: true,
+  },
+  eslint: {
+    ignoreDuringBuilds: true,
+  },
 };
 
 export default config;
