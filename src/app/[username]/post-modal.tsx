@@ -32,13 +32,16 @@ import UserLink from "~/components/user-link";
 import { Badge } from "~/components/ui/badge";
 import { ScrollArea, ScrollBar } from "~/components/ui/scroll-area";
 import { Separator } from "~/components/ui/separator";
-import { SignedIn, SignedOut, useUser } from "@clerk/nextjs";
 import { Input } from "~/components/ui/input";
 import {
   Collapsible,
   CollapsibleContent,
   CollapsibleTrigger,
 } from "~/components/ui/collapsible";
+import { useContext } from "react";
+import { SessionContext } from "../_components/session-provider";
+import SignedIn from "~/components/signed-in";
+import SignedOut from "~/components/signed-out";
 
 export default function PostModal({
   postId,
@@ -49,7 +52,7 @@ export default function PostModal({
   children: React.ReactNode;
 } & React.ComponentProps<typeof DialogTrigger>) {
   const trpc = useTRPC();
-  const { user: currentUser } = useUser();
+  const session = useContext(SessionContext);
   const { data: post, isLoading: isPostLoading } = useQuery(
     trpc.post.getPostById.queryOptions(postId),
   );
@@ -88,7 +91,9 @@ export default function PostModal({
                 className="flex items-center gap-2"
               >
                 <Avatar>
-                  <AvatarImage src={post!.author.imageUrl} />
+                  {post?.author.image && (
+                    <AvatarImage src={post.author.image} />
+                  )}
                   <AvatarFallback>
                     {post!.author.username.charAt(0).toUpperCase()}
                   </AvatarFallback>
@@ -181,7 +186,7 @@ export default function PostModal({
                       {post!.dedications.map((dedication, index) => (
                         <UserLink
                           key={index}
-                          imageUrl={dedication.user.imageUrl}
+                          imageUrl={dedication.user.image}
                           username={dedication.user.username}
                         />
                       ))}
@@ -193,7 +198,7 @@ export default function PostModal({
                       {post!.inspirations.map((inspiration, index) => (
                         <UserLink
                           key={index}
-                          imageUrl={inspiration.user.imageUrl}
+                          imageUrl={inspiration.user.image}
                           username={inspiration.user.username}
                         />
                       ))}
@@ -268,9 +273,11 @@ export default function PostModal({
               <div className="mb-2 flex items-center gap-2">
                 <SignedIn>
                   <Avatar className="aspect-square h-full">
-                    <AvatarImage src={currentUser?.imageUrl ?? ""} />
+                    {session?.user.image && (
+                      <AvatarImage src={session.user.image} />
+                    )}
                     <AvatarFallback>
-                      {currentUser?.username?.charAt(0).toUpperCase()}
+                      {session!.user.username?.charAt(0).toUpperCase()}
                     </AvatarFallback>
                   </Avatar>
                   <Input placeholder="Add a comment..." />
@@ -297,7 +304,9 @@ export default function PostModal({
                         className="mt-2"
                       >
                         <Avatar>
-                          <AvatarImage src={comment.author.imageUrl} />
+                          {comment.author.image && (
+                            <AvatarImage src={comment.author.image} />
+                          )}
                           <AvatarFallback>
                             {comment.author.username.charAt(0).toUpperCase()}
                           </AvatarFallback>
@@ -325,9 +334,9 @@ export default function PostModal({
                                 >
                                   <Link href={`/${reply.author.username}`}>
                                     <Avatar>
-                                      <AvatarImage
-                                        src={reply.author.imageUrl}
-                                      />
+                                      {reply.author.image && (
+                                        <AvatarImage src={reply.author.image} />
+                                      )}
                                       <AvatarFallback>
                                         {reply.author.username
                                           .charAt(0)

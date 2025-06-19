@@ -24,6 +24,8 @@ import UserLink from "./user-link";
 import { Skeleton } from "./ui/skeleton";
 import VideoPlayer from "./video-player";
 import PostModal from "~/app/[username]/post-modal";
+import { Avatar } from "@radix-ui/react-avatar";
+import { AvatarFallback, AvatarImage } from "./ui/avatar";
 
 type PostProps =
   | {
@@ -124,13 +126,17 @@ export default function Post({ data, isLoading }: PostProps) {
               href={`/${data.author.username}`}
               className="flex items-center gap-2"
             >
-              <Image
-                className="border-primary/20 rounded-full border-2"
-                src={data.author.imageUrl}
-                width={40}
-                height={40}
-                alt={data.author.username}
-              />
+              <Avatar className="size-10">
+                {data.author.image && (
+                  <AvatarImage
+                    src={data.author.image}
+                    alt={data.author.username}
+                  />
+                )}
+                <AvatarFallback>
+                  {data.author.username.charAt(0).toUpperCase()}
+                </AvatarFallback>
+              </Avatar>
               <span className="font-semibold">{data.author.username}</span>
             </Link>
           </div>
@@ -161,7 +167,7 @@ export default function Post({ data, isLoading }: PostProps) {
               {data.dedications.map((dedication, index) => (
                 <UserLink
                   key={index}
-                  imageUrl={dedication.user.imageUrl}
+                  imageUrl={dedication.user.image}
                   username={dedication.user.username}
                 />
               ))}
@@ -173,7 +179,7 @@ export default function Post({ data, isLoading }: PostProps) {
               {data.inspirations.map((inspiration, index) => (
                 <UserLink
                   key={index}
-                  imageUrl={inspiration.user.imageUrl}
+                  imageUrl={inspiration.user.image}
                   username={inspiration.user.username}
                 />
               ))}

@@ -8,11 +8,10 @@ import {
   postInspirations,
   posts,
   postTypeEnum,
-  users,
-} from "~/server/db/schema";
+} from "~/server/db/schema/schema";
+import { users } from "~/server/db/schema/auth";
 import { createTRPCRouter, protectedProcedure, publicProcedure } from "../trpc";
 import { z } from "zod/v4";
-import { clerkClient, currentUser } from "@clerk/nextjs/server";
 import { and, desc, eq, ilike, inArray, lt, or, sql } from "drizzle-orm";
 
 export const postsSchema = createSelectSchema(posts);
@@ -48,20 +47,6 @@ const emptyUuidToUndefined = z.preprocess((val) => {
   }
 }, z.uuid().optional());
 
-const getAvatars = async (clerkIds: string[]) => {
-  const clerkIdSet = new Set<string>();
-  for (const clerkId of clerkIds) {
-    clerkIdSet.add(clerkId);
-  }
-  const clerk = await clerkClient();
-  const { data: clerkUsers } = await clerk.users.getUserList({
-    userId: Array.from(clerkIdSet),
-  });
-  const clerkMap = new Map(clerkUsers.map((user) => [user.id, user.imageUrl]));
-
-  return clerkMap;
-};
-
 const createPostInputSchema = z.object({
   videoUrl: z.url().min(1, "Video URL is missing"),
   musicTitle: emptyStringToUndefined,
@@ -82,22 +67,14 @@ export const postRouter = createTRPCRouter({
   createPost: protectedProcedure
     .input(createPostInputSchema)
     .mutation(async ({ ctx, input }) => {
-      const { db } = ctx;
-      const user = await currentUser();
-      if (!user) {
-        throw new Error("User not found");
-      }
-      const userId = user.privateMetadata.dbUserId;
-      if (!userId || typeof userId !== "string") {
-        throw new Error("User ID not set in private metadata");
-      }
+      const { db, auth } = ctx;
       const { videoUrl, musicTitle, musicArtist, caption, remakePostId, type } =
         input;
       await db.transaction(async (tx) => {
         const insertedPosts = await tx
           .insert(posts)
           .values({
-            authorId: userId,
+            authorId: auth.id,
             videoUrl,
             musicTitle,
             musicArtist,
@@ -223,59 +200,14 @@ export const postRouter = createTRPCRouter({
         orderBy: desc(posts.createdAt),
         limit: input.limit,
       });
-      const clerkMap = await getAvatars(
-        items.flatMap((item) => [
-          item.author.clerkId,
-          ...item.dedications.map((dedication) => dedication.user.clerkId),
-          ...item.inspirations.map((inspiration) => inspiration.user.clerkId),
-        ]),
-      );
-      const mappedItems = items.map((item) => {
-        const authorAvatar = clerkMap.get(item.author.clerkId);
-        if (!authorAvatar)
-          throw new Error("Could not map clerk user to database user (author)");
-        const dedicationAvatar = clerkMap.get(item.author.clerkId);
-        if (!dedicationAvatar)
-          throw new Error(
-            "Could not map clerk user to database user (dedication)",
-          );
-        const inspirationAvatar = clerkMap.get(item.author.clerkId);
-        if (!inspirationAvatar)
-          throw new Error(
-            "Could not map clerk user to database user (inspiration)",
-          );
-        return {
-          ...item,
-          author: {
-            ...item.author,
-            imageUrl: authorAvatar,
-          },
-          dedications: item.dedications.map((dedication) => ({
-            ...dedication,
-            user: {
-              ...dedication.user,
-              imageUrl: dedicationAvatar,
-            },
-          })),
-          inspirations: item.inspirations.map((inspiration) => ({
-            ...inspiration,
-            user: {
-              ...inspiration.user,
-              imageUrl: inspirationAvatar,
-            },
-          })),
-        };
-      });
       const nextCursor =
-        mappedItems.length === input.limit
-          ? mappedItems[mappedItems.length - 1]
-          : undefined;
+        items.length === input.limit ? items[items.length - 1] : undefined;
 
       return {
         nextCursor: nextCursor
           ? { id: nextCursor.id, createdAt: nextCursor.createdAt }
           : undefined,
-        items: mappedItems,
+        items,
       };
     }),
 
@@ -330,63 +262,6 @@ export const postRouter = createTRPCRouter({
       orderBy: desc(posts.createdAt),
     });
     if (!post) throw new Error("Post not found");
-    const clerkMap = await getAvatars([
-      post.author.clerkId,
-      ...post.dedications.map((dedication) => dedication.user.clerkId),
-      ...post.inspirations.map((inspiration) => inspiration.user.clerkId),
-      ...post.comments.map((comment) => comment.author.clerkId),
-    ]);
-    const authorAvatar = clerkMap.get(post.author.clerkId);
-    if (!authorAvatar)
-      throw new Error("Could not map clerk user to database user (author)");
-    return {
-      ...post,
-      author: {
-        ...post.author,
-        imageUrl: authorAvatar,
-      },
-      dedications: post.dedications.map((dedication) => {
-        const imageUrl = clerkMap.get(dedication.user.clerkId);
-        if (!imageUrl)
-          throw new Error(
-            "Could not map clerk user to database user (dedication)",
-          );
-        return {
-          ...dedication,
-          user: {
-            ...dedication.user,
-            imageUrl,
-          },
-        };
-      }),
-      inspirations: post.inspirations.map((inspiration) => {
-        const imageUrl = clerkMap.get(inspiration.user.clerkId);
-        if (!imageUrl)
-          throw new Error(
-            "Could not map clerk user to database user (inspiration)",
-          );
-        return {
-          ...inspiration,
-          user: {
-            ...inspiration.user,
-            imageUrl,
-          },
-        };
-      }),
-      comments: post.comments.map((comment) => {
-        const imageUrl = clerkMap.get(comment.author.clerkId);
-        if (!imageUrl)
-          throw new Error(
-            "Could not map clerk user to database user (comment author)",
-          );
-        return {
-          ...comment,
-          author: {
-            ...comment.author,
-            imageUrl,
-          },
-        };
-      }),
-    };
+    return post;
   }),
 });

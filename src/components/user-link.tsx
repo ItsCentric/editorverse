@@ -7,7 +7,7 @@ export default function UserLink({
   username,
   imageUrl,
   ...props
-}: { username: string; imageUrl: string } & React.ComponentProps<
+}: { username: string; imageUrl?: string | null } & React.ComponentProps<
   typeof Button
 >) {
   return (
@@ -25,7 +25,7 @@ export default function UserLink({
       <HoverCardContent>
         <div className="flex items-center gap-2">
           <Avatar>
-            <AvatarImage src={imageUrl} alt={username} />
+            {imageUrl && <AvatarImage src={imageUrl} alt={username} />}
             <AvatarFallback>{username.charAt(0).toUpperCase()}</AvatarFallback>
           </Avatar>
           <p className="text-sm font-semibold">{username}</p>
