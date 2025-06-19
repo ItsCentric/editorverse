@@ -2,9 +2,8 @@
 import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
 import { Avatar, AvatarFallback, AvatarImage } from "~/components/ui/avatar";
 import { useTRPC } from "~/trpc/react";
-import { use } from "react";
+import { use, useContext } from "react";
 import { Button } from "~/components/ui/button";
-import { useUser } from "@clerk/nextjs";
 import {
   ChartNoAxesColumn,
   HeartCrack,
@@ -22,6 +21,7 @@ import {
 import { ScrollArea } from "~/components/ui/scroll-area";
 import { Skeleton } from "~/components/ui/skeleton";
 import PostModal from "./post-modal";
+import { SessionContext } from "../_components/session-provider";
 
 export default function ProfilePage({
   params,
@@ -30,7 +30,7 @@ export default function ProfilePage({
 }) {
   const trpc = useTRPC();
   const { username } = use(params);
-  const { user: currentClerkUser, isLoaded: isClerkLoaded } = useUser();
+  const session = useContext(SessionContext);
   const { data: userData, isLoading: isUserDataLoading } = useQuery(
     trpc.user.getUsersByUsername.queryOptions([username]),
   );
@@ -50,16 +50,15 @@ export default function ProfilePage({
   );
   const user = userData?.at(0);
   const posts = postsData?.pages.flatMap((page) => page.items) ?? [];
-  const isOwnProfile = currentClerkUser?.username === username;
+  const isOwnProfile = session?.user.username === username;
   if (
     isUserDataLoading ||
     isPostsDataLoading ||
     isFollowersDataLoading ||
-    isFollowingLoading ||
-    !isClerkLoaded
+    isFollowingLoading
   )
     return (
-      <div className="mx-auto my-12 max-w-4xl">
+      <div className="mx-auto my-12 max-w-4xl px-4">
         <div className="mb-8 flex justify-between">
           <div className="flex gap-4">
             <Skeleton className="size-24 rounded-full" />
@@ -86,7 +85,7 @@ export default function ProfilePage({
     <div className="mx-auto my-12 max-w-4xl px-4">
       <div className="mb-8 flex gap-4">
         <Avatar className="size-24">
-          <AvatarImage src={user?.avatarUrl} alt={user?.username} />
+          {user?.image && <AvatarImage src={user.image} alt={user.username} />}
           <AvatarFallback>
             {user?.username?.charAt(0).toUpperCase()}
           </AvatarFallback>
@@ -141,23 +140,27 @@ export default function ProfilePage({
                 <ScrollArea className="max-h-96">
                   {followersData?.map((follower) => (
                     <div
-                      key={follower.username}
+                      key={follower.user.username}
                       className="flex items-center justify-between"
                     >
                       <Link
-                        href={`/${follower.username}`}
+                        href={`/${follower.user.username}`}
                         className="flex items-center gap-2"
                       >
                         <Avatar className="size-8">
-                          <AvatarImage
-                            src={follower.imageUrl}
-                            alt={follower.username}
-                          />
+                          {follower.user.image && (
+                            <AvatarImage
+                              src={follower.user.image}
+                              alt={follower.user.username}
+                            />
+                          )}
                           <AvatarFallback>
-                            {follower.username.charAt(0).toUpperCase()}
+                            {follower.user.username?.charAt(0).toUpperCase()}
                           </AvatarFallback>
                         </Avatar>
-                        <p className="font-semibold">{follower.username}</p>
+                        <p className="font-semibold">
+                          {follower.user.username}
+                        </p>
                       </Link>
                       {isOwnProfile && (
                         <Button variant="outline">Remove</Button>
@@ -184,23 +187,25 @@ export default function ProfilePage({
                 <ScrollArea className="max-h-96">
                   {following?.map((follow) => (
                     <div
-                      key={follow.username}
+                      key={follow.user.username}
                       className="flex items-center justify-between"
                     >
                       <Link
-                        href={`/${follow.username}`}
+                        href={`/${follow.user.username}`}
                         className="flex items-center gap-2"
                       >
                         <Avatar className="size-8">
-                          <AvatarImage
-                            src={follow.imageUrl}
-                            alt={follow.username}
-                          />
+                          {follow.user.image && (
+                            <AvatarImage
+                              src={follow.user.image}
+                              alt={follow.user.username}
+                            />
+                          )}
                           <AvatarFallback>
-                            {follow.username.charAt(0).toUpperCase()}
+                            {follow.user.username?.charAt(0).toUpperCase()}
                           </AvatarFallback>
                         </Avatar>
-                        <p className="font-semibold">{follow.username}</p>
+                        <p className="font-semibold">{follow.user.username}</p>
                       </Link>
                       {isOwnProfile && (
                         <Button variant="outline">Unfollow</Button>
