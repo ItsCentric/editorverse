@@ -8,14 +8,7 @@ import {
 } from "drizzle-orm/pg-core";
 import { timestamps } from "./columns.helpers";
 import { relations } from "drizzle-orm";
-
-export const users = pgTable("users", (d) => ({
-  id: d.uuid().primaryKey().defaultRandom(),
-  ...timestamps,
-  clerkId: d.text().notNull().unique(),
-  username: d.text().notNull().unique(),
-  email: d.text().notNull().unique(),
-}));
+import { users } from "./auth";
 
 export const postTypeEnum = pgEnum("post_types", [
   "regular",
@@ -29,7 +22,7 @@ export const posts = pgTable(
     id: d.uuid().primaryKey().defaultRandom(),
     ...timestamps,
     authorId: d
-      .uuid()
+      .text()
       .references(() => users.id, { onDelete: "cascade" })
       .notNull(),
     caption: d.text().notNull(),
@@ -66,7 +59,7 @@ export const reposts = pgTable(
       .references(() => posts.id, { onDelete: "cascade" })
       .notNull(),
     userId: d
-      .uuid()
+      .text()
       .references(() => users.id, { onDelete: "cascade" })
       .notNull(),
   }),
@@ -80,7 +73,7 @@ export const postDedications = pgTable("post_dedications", (d) => ({
     .references(() => posts.id, { onDelete: "cascade" })
     .notNull(),
   dedicatedToUserId: d
-    .uuid()
+    .text()
     .references(() => users.id, { onDelete: "set null" })
     .notNull(),
   isSpecial: d.boolean().notNull(),
@@ -108,7 +101,7 @@ export const postInspirations = pgTable(
       .references(() => posts.id, { onDelete: "cascade" })
       .notNull(),
     inspiredByUserId: d
-      .uuid()
+      .text()
       .references(() => users.id, { onDelete: "set null" })
       .notNull(),
   }),
@@ -166,7 +159,7 @@ export const likes = pgTable(
     ...timestamps,
     deletedAt: d.timestamp({ withTimezone: true }),
     userId: d
-      .uuid()
+      .text()
       .references(() => users.id, { onDelete: "cascade" })
       .notNull(),
     postId: d
@@ -194,7 +187,7 @@ export const comments = pgTable(
     id: d.uuid().primaryKey().defaultRandom(),
     ...timestamps,
     authorId: d
-      .uuid()
+      .text()
       .references(() => users.id, { onDelete: "cascade" })
       .notNull(),
     postId: d
@@ -236,7 +229,7 @@ export const saves = pgTable(
   "saves",
   (d) => ({
     userId: d
-      .uuid()
+      .text()
       .references(() => users.id, { onDelete: "cascade" })
       .notNull(),
     postId: d
@@ -255,7 +248,7 @@ export const collections = pgTable("collections", (d) => ({
   id: d.uuid().primaryKey().defaultRandom(),
   ...timestamps,
   userId: d
-    .uuid()
+    .text()
     .references(() => users.id, { onDelete: "cascade" })
     .notNull(),
   name: d.text().notNull(),
@@ -283,11 +276,11 @@ export const userFollows = pgTable(
   "user_follows",
   (d) => ({
     followerId: d
-      .uuid()
+      .text()
       .references(() => users.id, { onDelete: "cascade" })
       .notNull(),
     followedId: d
-      .uuid()
+      .text()
       .references(() => users.id, { onDelete: "cascade" })
       .notNull(),
   }),
@@ -313,11 +306,11 @@ export const userBlocks = pgTable(
   "user_blocks",
   (d) => ({
     blockerId: d
-      .uuid()
+      .text()
       .references(() => users.id, { onDelete: "cascade" })
       .notNull(),
     blockedId: d
-      .uuid()
+      .text()
       .references(() => users.id, { onDelete: "cascade" })
       .notNull(),
   }),
@@ -343,7 +336,7 @@ export const groupMemberships = pgTable(
     id: d.uuid().primaryKey().defaultRandom(),
     ...timestamps,
     userId: d
-      .uuid()
+      .text()
       .references(() => users.id, { onDelete: "cascade" })
       .notNull(),
     groupId: d
@@ -359,7 +352,7 @@ export const groupFollows = pgTable("group_follows", (d) => ({
   id: d.uuid().primaryKey().defaultRandom(),
   ...timestamps,
   userId: d
-    .uuid()
+    .text()
     .references(() => users.id, { onDelete: "cascade" })
     .notNull(),
   groupId: d
@@ -372,11 +365,11 @@ export const messages = pgTable("messages", (d) => ({
   id: d.uuid().primaryKey().defaultRandom(),
   ...timestamps,
   senderId: d
-    .uuid()
+    .text()
     .references(() => users.id, { onDelete: "set null" })
     .notNull(),
   receiverId: d
-    .uuid()
+    .text()
     .references(() => users.id, { onDelete: "set null" })
     .notNull(),
   content: d.text().notNull(),
@@ -390,7 +383,7 @@ export const collaborativePosts = pgTable("collaborative_posts", (d) => ({
     .references(() => posts.id, { onDelete: "cascade" })
     .notNull(),
   collaboratorId: d
-    .uuid()
+    .text()
     .references(() => users.id, { onDelete: "set null" })
     .notNull(),
 }));
@@ -436,7 +429,7 @@ export const groupApplications = pgTable("group_applications", (d) => ({
     .references(() => applicationForms.id)
     .notNull(),
   applicantId: d
-    .uuid()
+    .text()
     .references(() => users.id)
     .notNull(),
   status: applicationStatusEnum().notNull(),
@@ -471,7 +464,7 @@ export const formQuestionResponses = pgTable(
       .notNull(),
     payload: d.jsonb().notNull(),
     applicantId: d
-      .uuid()
+      .text()
       .references(() => users.id)
       .notNull(),
   }),
