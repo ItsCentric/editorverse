@@ -20,6 +20,8 @@ export const env = createEnv({
     B2_BUCKET: z.string(),
     B2_REGION: z.string(),
     CDN_URL: z.string().url(),
+    MAILGUN_SENDING_KEY: z.string(),
+    MAILGUN_SENDING_DOMAIN: z.string(),
   },
 
   /**
@@ -47,6 +49,8 @@ export const env = createEnv({
     B2_BUCKET: process.env.B2_BUCKET,
     B2_REGION: process.env.B2_REGION,
     CDN_URL: process.env.CDN_URL,
+    MAILGUN_SENDING_KEY: process.env.MAILGUN_SENDING_KEY,
+    MAILGUN_SENDING_DOMAIN: process.env.MAILGUN_SENDING_DOMAIN,
   },
   /**
    * Run `build` or `dev` with `SKIP_ENV_VALIDATION` to skip env validation. This is especially

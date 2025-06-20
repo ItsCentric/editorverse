@@ -60,10 +60,6 @@ export default function SignInTab() {
     },
   });
 
-  useEffect(() => {
-    console.log("mutation error:", error);
-  }, [error]);
-
   return (
     <Form {...form}>
       <form
