@@ -1,6 +1,5 @@
 "use client";
 import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
-import { Avatar, AvatarFallback, AvatarImage } from "~/components/ui/avatar";
 import { useTRPC } from "~/trpc/react";
 import { use, useContext } from "react";
 import { Button } from "~/components/ui/button";
@@ -22,6 +21,7 @@ import { ScrollArea } from "~/components/ui/scroll-area";
 import { Skeleton } from "~/components/ui/skeleton";
 import PostModal from "./post-modal";
 import { SessionContext } from "../_components/session-provider";
+import UserAvatar from "~/components/user-avatar";
 
 export default function ProfilePage({
   params,
@@ -84,12 +84,11 @@ export default function ProfilePage({
   return (
     <div className="mx-auto my-12 max-w-4xl px-4">
       <div className="mb-8 flex gap-4">
-        <Avatar className="size-24">
-          {user?.image && <AvatarImage src={user.image} alt={user.username} />}
-          <AvatarFallback>
-            {user?.username?.charAt(0).toUpperCase()}
-          </AvatarFallback>
-        </Avatar>
+        <UserAvatar
+          username={user!.username}
+          src={user?.image}
+          className="size-24"
+        />
         <div className="flex-1 space-y-2">
           <div className="flex items-center justify-between">
             <p className="text-2xl font-bold">{user?.username}</p>
@@ -147,17 +146,11 @@ export default function ProfilePage({
                         href={`/${follower.user.username}`}
                         className="flex items-center gap-2"
                       >
-                        <Avatar className="size-8">
-                          {follower.user.image && (
-                            <AvatarImage
-                              src={follower.user.image}
-                              alt={follower.user.username}
-                            />
-                          )}
-                          <AvatarFallback>
-                            {follower.user.username?.charAt(0).toUpperCase()}
-                          </AvatarFallback>
-                        </Avatar>
+                        <UserAvatar
+                          username={follower.user.username}
+                          src={follower.user.image}
+                          className="size-8"
+                        />
                         <p className="font-semibold">
                           {follower.user.username}
                         </p>
@@ -194,17 +187,11 @@ export default function ProfilePage({
                         href={`/${follow.user.username}`}
                         className="flex items-center gap-2"
                       >
-                        <Avatar className="size-8">
-                          {follow.user.image && (
-                            <AvatarImage
-                              src={follow.user.image}
-                              alt={follow.user.username}
-                            />
-                          )}
-                          <AvatarFallback>
-                            {follow.user.username?.charAt(0).toUpperCase()}
-                          </AvatarFallback>
-                        </Avatar>
+                        <UserAvatar
+                          username={follow.user.username}
+                          src={follow.user.image}
+                          className="size-8"
+                        />
                         <p className="font-semibold">{follow.user.username}</p>
                       </Link>
                       {isOwnProfile && (
