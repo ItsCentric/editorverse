@@ -45,8 +45,6 @@ function SpecialButton({
     </Button>
   );
 }
-// TODO: fix no image for author on post, change file uploading to upload to user folder,
-// test website further, video player for video preview on post creation is not same as rest of application
 export default async function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
