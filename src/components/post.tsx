@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import Image from "next/image";
 import { Button } from "./ui/button";
 import type { RouterOutputs } from "~/trpc/react";
 import { Badge } from "./ui/badge";
@@ -24,8 +23,7 @@ import UserLink from "./user-link";
 import { Skeleton } from "./ui/skeleton";
 import VideoPlayer from "./video-player";
 import PostModal from "~/app/[username]/post-modal";
-import { Avatar } from "@radix-ui/react-avatar";
-import { AvatarFallback, AvatarImage } from "./ui/avatar";
+import UserAvatar from "./user-avatar";
 
 type PostProps =
   | {
@@ -126,17 +124,11 @@ export default function Post({ data, isLoading }: PostProps) {
               href={`/${data.author.username}`}
               className="flex items-center gap-2"
             >
-              <Avatar className="size-10">
-                {data.author.image && (
-                  <AvatarImage
-                    src={data.author.image}
-                    alt={data.author.username}
-                  />
-                )}
-                <AvatarFallback>
-                  {data.author.username.charAt(0).toUpperCase()}
-                </AvatarFallback>
-              </Avatar>
+              <UserAvatar
+                src={data.author.image}
+                username={data.author.username}
+                className="size-10"
+              />
               <span className="font-semibold">{data.author.username}</span>
             </Link>
           </div>

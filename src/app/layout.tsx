@@ -16,6 +16,7 @@ import ProfileButton from "./_components/profile-button";
 import SignedIn from "~/components/signed-in";
 import SignedOut from "~/components/signed-out";
 import { env } from "~/env";
+import SpecialButton from "./_components/special-button";
 
 export const metadata: Metadata = {
   title: "Editorverse",
@@ -32,19 +33,6 @@ const readexPro = Readex_Pro({
   variable: "--font-readex-pro",
 });
 
-function SpecialButton({
-  children,
-  ...props
-}: { children: React.ReactNode } & React.ComponentProps<typeof Button>) {
-  return (
-    <Button
-      className="from-primary to-secondary hidden cursor-pointer bg-linear-150 transition-all hover:scale-105 md:flex"
-      {...props}
-    >
-      {children}
-    </Button>
-  );
-}
 export default async function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {

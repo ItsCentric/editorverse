@@ -1,6 +1,5 @@
 "use client";
 
-import { Avatar, AvatarFallback, AvatarImage } from "~/components/ui/avatar";
 import {
   Dialog,
   DialogContent,
@@ -42,6 +41,7 @@ import { useContext } from "react";
 import { SessionContext } from "../_components/session-provider";
 import SignedIn from "~/components/signed-in";
 import SignedOut from "~/components/signed-out";
+import UserAvatar from "~/components/user-avatar";
 
 export default function PostModal({
   postId,
@@ -90,14 +90,10 @@ export default function PostModal({
                 href={`/${post!.author.username}`}
                 className="flex items-center gap-2"
               >
-                <Avatar>
-                  {post?.author.image && (
-                    <AvatarImage src={post.author.image} />
-                  )}
-                  <AvatarFallback>
-                    {post!.author.username.charAt(0).toUpperCase()}
-                  </AvatarFallback>
-                </Avatar>
+                <UserAvatar
+                  username={post!.author.username}
+                  src={post!.author.image}
+                />
                 <p className="text-lg font-semibold">{post!.author.username}</p>
               </Link>
             </>
@@ -272,21 +268,16 @@ export default function PostModal({
               </p>
               <div className="mb-2 flex items-center gap-2">
                 <SignedIn>
-                  <Avatar className="aspect-square h-full">
-                    {session?.user.image && (
-                      <AvatarImage src={session.user.image} />
-                    )}
-                    <AvatarFallback>
-                      {session!.user.username?.charAt(0).toUpperCase()}
-                    </AvatarFallback>
-                  </Avatar>
+                  <UserAvatar
+                    src={session!.user.image}
+                    username={session!.user.username!}
+                    className="aspect-square h-full"
+                  />
                   <Input placeholder="Add a comment..." />
                   <Button>Post</Button>
                 </SignedIn>
                 <SignedOut>
-                  <Avatar className="aspect-square h-full">
-                    <AvatarFallback>?</AvatarFallback>
-                  </Avatar>
+                  <UserAvatar username="?" className="aspect-square h-full" />
                   <Input placeholder="Add a comment..." disabled />
                   <Button disabled>Post</Button>
                 </SignedOut>
@@ -303,14 +294,10 @@ export default function PostModal({
                         href={`/${comment.author.username}`}
                         className="mt-2"
                       >
-                        <Avatar>
-                          {comment.author.image && (
-                            <AvatarImage src={comment.author.image} />
-                          )}
-                          <AvatarFallback>
-                            {comment.author.username.charAt(0).toUpperCase()}
-                          </AvatarFallback>
-                        </Avatar>
+                        <UserAvatar
+                          src={comment.author.image}
+                          username={comment.author.username}
+                        />
                       </Link>
                       <div className="flex flex-col">
                         <Link
@@ -333,16 +320,10 @@ export default function PostModal({
                                   className="flex items-center gap-2"
                                 >
                                   <Link href={`/${reply.author.username}`}>
-                                    <Avatar>
-                                      {reply.author.image && (
-                                        <AvatarImage src={reply.author.image} />
-                                      )}
-                                      <AvatarFallback>
-                                        {reply.author.username
-                                          .charAt(0)
-                                          .toUpperCase()}
-                                      </AvatarFallback>
-                                    </Avatar>
+                                    <UserAvatar
+                                      src={reply.author.image}
+                                      username={reply.author.username}
+                                    />
                                   </Link>
                                   <div className="flex flex-col">
                                     <Link
