@@ -2,20 +2,20 @@ import "~/styles/globals.css";
 
 import { type Metadata } from "next";
 import { Lexend_Deca, Readex_Pro } from "next/font/google";
-
-import { ClerkProvider, SignedIn, SignedOut, UserButton } from "@clerk/nextjs";
 import { TRPCReactProvider } from "~/trpc/react";
 import Link from "next/link";
 import { Button } from "~/components/ui/button";
 import { House, LogIn, MessageCircle, PlusSquare, Search } from "lucide-react";
 import NavButton from "./nav-button";
 import AuthModal from "./auth-modal";
-import { dark } from "@clerk/themes";
 import CreatePostModal from "./_components/create-post-modal";
 import { Toaster } from "sonner";
-import OnSignIn from "./_components/on-sign-in";
-import { currentUser } from "@clerk/nextjs/server";
-import { Avatar, AvatarFallback, AvatarImage } from "~/components/ui/avatar";
+import DevTools from "./_components/dev-tools";
+import SessionProvider from "./_components/session-provider";
+import ProfileButton from "./_components/profile-button";
+import SignedIn from "~/components/signed-in";
+import SignedOut from "~/components/signed-out";
+import { env } from "~/env";
 
 export const metadata: Metadata = {
   title: "Editorverse",
@@ -45,16 +45,17 @@ function SpecialButton({
     </Button>
   );
 }
-
+// TODO: fix no image for author on post, change file uploading to upload to user folder,
+// test website further, video player for video preview on post creation is not same as rest of application
 export default async function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
-  const user = await currentUser();
   return (
     <html lang="en" className={`${lexendDeca.variable} ${readexPro.variable}`}>
       <body className="dark flex min-h-screen flex-col">
-        <ClerkProvider appearance={{ baseTheme: dark }}>
-          <TRPCReactProvider>
+        <TRPCReactProvider>
+          <SessionProvider>
+            {env.NODE_ENV !== "production" && <DevTools />}
             <nav className="bg-background supports-[backdrop-filter]:bg-background/80 sticky top-0 z-50 w-full border-b py-4 backdrop-blur-md md:top-0">
               <div className="container mx-auto flex items-center justify-center md:justify-between">
                 <div className="flex gap-8">
@@ -78,27 +79,13 @@ export default async function RootLayout({
                 </div>
                 <SignedIn>
                   <div className="hidden items-center gap-4 md:flex">
-                    <OnSignIn />
                     <CreatePostModal>
                       <SpecialButton size="lg">
                         <PlusSquare className="size-4" />
                         <p>Create</p>
                       </SpecialButton>
                     </CreatePostModal>
-                    <Button variant="link" size="icon" asChild>
-                      <Link href={`/${user?.username}`}>
-                        <Avatar className="!size-9 flex-1">
-                          <AvatarImage
-                            src={user?.imageUrl}
-                            alt={user?.username}
-                            className="flex-1"
-                          />
-                          <AvatarFallback>
-                            {user?.username?.charAt(0).toUpperCase()}
-                          </AvatarFallback>
-                        </Avatar>
-                      </Link>
-                    </Button>
+                    <ProfileButton />
                   </div>
                 </SignedIn>
                 <SignedOut>
@@ -132,20 +119,7 @@ export default async function RootLayout({
                   <MessageCircle className="size-6" />
                 </NavButton>
                 <SignedIn>
-                  <Button variant="link" size="icon" asChild>
-                    <Link href={`/${user?.username}`}>
-                      <Avatar className="!size-9 flex-1">
-                        <AvatarImage
-                          src={user?.imageUrl}
-                          alt={user?.username}
-                          className="flex-1"
-                        />
-                        <AvatarFallback>
-                          {user?.username?.charAt(0).toUpperCase()}
-                        </AvatarFallback>
-                      </Avatar>
-                    </Link>
-                  </Button>
+                  <ProfileButton />
                 </SignedIn>
                 <SignedOut>
                   <AuthModal>
@@ -160,8 +134,8 @@ export default async function RootLayout({
               </div>
             </nav>
             <Toaster />
-          </TRPCReactProvider>
-        </ClerkProvider>
+          </SessionProvider>
+        </TRPCReactProvider>
       </body>
     </html>
   );
