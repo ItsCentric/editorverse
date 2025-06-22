@@ -10,7 +10,7 @@ type UploadVideoOptions = {
   concurrencyLimit?: number;
 };
 
-export function useUploadVideo(options?: UploadVideoOptions) {
+export function useChunkedUpload(options?: UploadVideoOptions) {
   const trpc = useTRPC();
   const initiateUpload = useMutation(
     trpc.file.initiateUpload.mutationOptions({

@@ -8,6 +8,7 @@ import {
   postInspirations,
   posts,
   postTypeEnum,
+  thumbnails,
 } from "~/server/db/schema/schema";
 import { users } from "~/server/db/schema/auth";
 import { createTRPCRouter, protectedProcedure, publicProcedure } from "../trpc";
@@ -49,6 +50,7 @@ const emptyUuidToUndefined = z.preprocess((val) => {
 
 const createPostInputSchema = z.object({
   videoUrl: z.url().min(1, "Video URL is missing"),
+  thumbnailUrls: z.url().array().min(1, "Missing at least 1 thumbnail URL"),
   musicTitle: emptyStringToUndefined,
   musicArtist: emptyStringToUndefined,
   caption: z.string(),
@@ -150,6 +152,11 @@ export const postRouter = createTRPCRouter({
           }));
           await tx.insert(artistCredits).values(artistCreditData);
         }
+        const thumbnailData = input.thumbnailUrls.map((url) => ({
+          postId: insertedPostId,
+          url,
+        }));
+        await tx.insert(thumbnails).values(thumbnailData);
       });
     }),
 
@@ -190,6 +197,7 @@ export const postRouter = createTRPCRouter({
           artCredits: true,
           remadePost: true,
           comments: true,
+          thumbnails: true,
         },
         extras: {
           likeCount:
@@ -224,9 +232,14 @@ export const postRouter = createTRPCRouter({
       const { username, cursor } = input;
 
       const userPosts = await db
-        .select({ id: posts.id, createdAt: posts.createdAt })
+        .select({
+          id: posts.id,
+          createdAt: posts.createdAt,
+          thumbnailUrl: thumbnails.url,
+        })
         .from(posts)
         .innerJoin(users, eq(users.id, posts.authorId))
+        .innerJoin(thumbnails, eq(thumbnails.postId, posts.id))
         .where(and(eq(users.username, username), cursorFilter(cursor)))
         .orderBy(desc(posts.createdAt))
         .limit(input.limit);
@@ -252,6 +265,7 @@ export const postRouter = createTRPCRouter({
         artCredits: true,
         remadePost: true,
         comments: { with: { author: true } },
+        thumbnails: true,
       },
       extras: {
         likeCount:

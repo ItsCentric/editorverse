@@ -8,9 +8,11 @@ import { Input } from "~/components/ui/input";
 
 export default function UploadVideo({
   onVideoChange,
+  videoRef,
   ...props
 }: {
   onVideoChange?: (file: File | undefined) => void;
+  videoRef?: React.RefObject<HTMLVideoElement | null>;
 } & React.ComponentProps<typeof Input>) {
   const [videoPreview, setVideoPreview] = useState<string | null>(null);
 
@@ -49,6 +51,7 @@ export default function UploadVideo({
       <div className="relative aspect-video overflow-hidden rounded-xl bg-black">
         <video
           src={videoPreview}
+          ref={videoRef}
           className="h-full w-full object-contain"
           controls
         />

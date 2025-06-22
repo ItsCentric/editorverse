@@ -3,6 +3,7 @@
  * for Docker builds.
  */
 import "./src/env.js";
+import { env } from "./src/env.js";
 
 /** @type {import("next").NextConfig} */
 const config = {
@@ -11,6 +12,9 @@ const config = {
   },
   eslint: {
     ignoreDuringBuilds: true,
+  },
+  images: {
+    remotePatterns: [new URL(env.CDN_URL + "/*")],
   },
 };
 

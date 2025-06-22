@@ -49,6 +49,21 @@ export const postRelations = relations(posts, ({ one, many }) => ({
   artCredits: many(artistCredits),
   likes: many(likes),
   comments: many(comments),
+  thumbnails: many(thumbnails),
+}));
+
+export const thumbnails = pgTable("thumbnails", (d) => ({
+  id: d.uuid().primaryKey().defaultRandom(),
+  ...timestamps,
+  postId: d
+    .uuid()
+    .references(() => posts.id, { onDelete: "cascade" })
+    .notNull(),
+  url: d.text().notNull(),
+}));
+
+export const thumbnailsRelations = relations(thumbnails, ({ one }) => ({
+  post: one(posts, { fields: [thumbnails.postId], references: [posts.id] }),
 }));
 
 export const reposts = pgTable(
