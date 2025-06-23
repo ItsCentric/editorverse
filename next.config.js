@@ -14,7 +14,7 @@ const config = {
     ignoreDuringBuilds: true,
   },
   images: {
-    remotePatterns: [new URL(env.CDN_URL + "/*")],
+    remotePatterns: [new URL(env.CDN_URL + "/**")],
   },
 };
 

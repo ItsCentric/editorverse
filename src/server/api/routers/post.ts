@@ -49,6 +49,7 @@ const emptyUuidToUndefined = z.preprocess((val) => {
 }, z.uuid().optional());
 
 const createPostInputSchema = z.object({
+  id: z.uuid().optional(),
   videoUrl: z.url().min(1, "Video URL is missing"),
   thumbnailUrls: z.url().array().min(1, "Missing at least 1 thumbnail URL"),
   musicTitle: emptyStringToUndefined,
@@ -70,12 +71,20 @@ export const postRouter = createTRPCRouter({
     .input(createPostInputSchema)
     .mutation(async ({ ctx, input }) => {
       const { db, auth } = ctx;
-      const { videoUrl, musicTitle, musicArtist, caption, remakePostId, type } =
-        input;
+      const {
+        id,
+        videoUrl,
+        musicTitle,
+        musicArtist,
+        caption,
+        remakePostId,
+        type,
+      } = input;
       await db.transaction(async (tx) => {
         const insertedPosts = await tx
           .insert(posts)
           .values({
+            id,
             authorId: auth.id,
             videoUrl,
             musicTitle,
