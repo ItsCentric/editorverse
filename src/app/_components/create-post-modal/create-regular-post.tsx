@@ -141,11 +141,11 @@ export default function CreateRegularPost({ onPostStart }: PostModalPageProps) {
       const postId = crypto.randomUUID();
       const videoUrl = await upload(
         basicData.file,
-        `${session.user.id}/${postId}/${basicData.file.name}.${basicData.file.type.split("/")[1]}`,
+        `${session.user.id}/${postId}/${crypto.randomUUID()}.${basicData.file.type.split("/")[1]}`,
       );
       const thumbnailUrl = await upload(
         basicData.thumbnail,
-        `${session.user.id}/${postId}/thumbnails/${basicData.thumbnail.name}.${basicData.thumbnail.type.split("/")[1]}`,
+        `${session.user.id}/${postId}/thumbnails/${crypto.randomUUID()}.${basicData.thumbnail.type.split("/")[1]}`,
       );
       return await createPost.mutateAsync({
         id: postId,
