@@ -5,14 +5,19 @@ import { useState } from "react";
 import { Button } from "~/components/ui/button";
 import { FormLabel } from "~/components/ui/form";
 import { Input } from "~/components/ui/input";
+import VideoPlayer from "~/components/video-player";
 
 export default function UploadVideo({
   onVideoChange,
   videoRef,
+  onPreviewMetadataLoaded,
   ...props
 }: {
   onVideoChange?: (file: File | undefined) => void;
   videoRef?: React.RefObject<HTMLVideoElement | null>;
+  onPreviewMetadataLoaded?: (
+    event: React.SyntheticEvent<HTMLVideoElement>,
+  ) => void;
 } & React.ComponentProps<typeof Input>) {
   const [videoPreview, setVideoPreview] = useState<string | null>(null);
 
@@ -48,12 +53,11 @@ export default function UploadVideo({
     );
   } else {
     return (
-      <div className="relative aspect-video overflow-hidden rounded-xl bg-black">
-        <video
+      <div className="relative">
+        <VideoPlayer
           src={videoPreview}
           ref={videoRef}
-          className="h-full w-full object-contain"
-          controls
+          onLoadedMetadata={onPreviewMetadataLoaded}
         />
         <Button
           type="button"

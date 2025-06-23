@@ -5,35 +5,26 @@ import Image from "next/image";
 import Instaplay from "player.style/instaplay/react";
 import { useCallback, useContext, useState } from "react";
 import { CurrentVideoContext } from "~/app/_components/feed";
+import useAspectRatioMappings from "~/lib/useAspectRatioMappings";
 
 export default function VideoPlayer({
   id,
   poster,
+  onLoadedMetadata,
   ...props
 }: React.ComponentProps<typeof Player> & { id?: string }) {
   const [aspectClass, setAspectClass] = useState("aspect-video");
   const { currentVideo, setCurrentVideo } = useContext(CurrentVideoContext);
-  const onLoadedMetadata = useCallback(
+  const mapAspectRatio = useAspectRatioMappings();
+  const handleOnLoadedMetadata = useCallback(
     (e: React.SyntheticEvent<HTMLVideoElement>) => {
+      if (onLoadedMetadata) onLoadedMetadata(e);
       const video = e.currentTarget;
-      const ratio = video.videoWidth / video.videoHeight;
-
-      const targets: { ratio: number; cls: string }[] = [
-        { ratio: 1, cls: "aspect-square" },
-        { ratio: 16 / 9, cls: "aspect-video" },
-        { ratio: 4 / 3, cls: "aspect-[4/3]" },
-        { ratio: 3 / 4, cls: "aspect-[3/4]" },
-      ];
-
-      const { cls } = targets.reduce((closest, curr) => {
-        const currDiff = Math.abs(ratio - curr.ratio);
-        const bestDiff = Math.abs(ratio - closest.ratio);
-        return currDiff < bestDiff ? curr : closest;
-      });
+      const { cls } = mapAspectRatio(video.videoWidth, video.videoHeight);
 
       setAspectClass(cls);
     },
-    [],
+    [mapAspectRatio, onLoadedMetadata],
   );
 
   return (
@@ -41,7 +32,7 @@ export default function VideoPlayer({
       <Player
         id={id}
         className={`container size-full object-contain ${aspectClass}`}
-        onLoadedMetadata={onLoadedMetadata}
+        onLoadedMetadata={handleOnLoadedMetadata}
         theme={Instaplay}
         style={{ "--media-accent-color": "var(--primary)" }}
         onPlay={(e) => {
