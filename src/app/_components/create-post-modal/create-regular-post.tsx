@@ -36,6 +36,7 @@ import type { PostModalPageProps } from ".";
 import Image from "next/image";
 import { Slider } from "~/components/ui/slider";
 import { SessionContext } from "../session-provider";
+import useAspectRatioMappings from "~/lib/useAspectRatioMappings";
 
 const tagSchema = z.object({ id: z.string().nullable(), name: z.string() });
 
@@ -87,6 +88,9 @@ export default function CreateRegularPost({ onPostStart }: PostModalPageProps) {
   const thumbnailInputLabelRef = useRef<HTMLLabelElement>(null);
   const { userSearch, categorySearch } = useSuggestionSearch();
   const session = useContext(SessionContext);
+  const [previewAspectRatio, setPreviewAspectRatio] =
+    useState<string>("aspect-video");
+  const mapAspectRatio = useAspectRatioMappings();
   const basicInfoForm = useForm<z.infer<typeof basicInfoSchema>>({
     resolver: zodResolver(basicInfoSchema),
     defaultValues: {
@@ -263,6 +267,15 @@ export default function CreateRegularPost({ onPostStart }: PostModalPageProps) {
                         onVideoChange={(file) =>
                           basicInfoForm.setValue("file", file!)
                         }
+                        onPreviewMetadataLoaded={(event) => {
+                          const video = event.currentTarget;
+                          if (!video) return;
+                          const { cls } = mapAspectRatio(
+                            video.videoWidth,
+                            video.videoHeight,
+                          );
+                          setPreviewAspectRatio(cls);
+                        }}
                         {...fieldProps}
                       />
                     </FormControl>
@@ -384,7 +397,7 @@ export default function CreateRegularPost({ onPostStart }: PostModalPageProps) {
                   </div>
                 )}
                 {thumbnailPreview && (
-                  <div className="relative aspect-video w-full">
+                  <div className={`relative ${previewAspectRatio} w-full`}>
                     <Button
                       type="button"
                       variant="destructive"
