@@ -1,14 +1,16 @@
 "use client";
 
 import Player from "next-video/player";
+import Image from "next/image";
 import Instaplay from "player.style/instaplay/react";
 import { useCallback, useContext, useState } from "react";
 import { CurrentVideoContext } from "~/app/_components/feed";
 
 export default function VideoPlayer({
   id,
+  poster,
   ...props
-}: React.ComponentProps<typeof Player> & { id: string }) {
+}: React.ComponentProps<typeof Player> & { id?: string }) {
   const [aspectClass, setAspectClass] = useState("aspect-video");
   const { currentVideo, setCurrentVideo } = useContext(CurrentVideoContext);
   const onLoadedMetadata = useCallback(
@@ -48,7 +50,17 @@ export default function VideoPlayer({
           setCurrentVideo(e.currentTarget);
         }}
         {...props}
-      />
+      >
+        {poster && (
+          <Image
+            src={poster}
+            slot="poster"
+            fill
+            className="object-cover"
+            alt=""
+          />
+        )}
+      </Player>
     </div>
   );
 }

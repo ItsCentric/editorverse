@@ -22,6 +22,7 @@ import { Skeleton } from "~/components/ui/skeleton";
 import PostModal from "./post-modal";
 import { SessionContext } from "../_components/session-provider";
 import UserAvatar from "~/components/user-avatar";
+import Image from "next/image";
 
 export default function ProfilePage({
   params,
@@ -210,7 +211,14 @@ export default function ProfilePage({
         <div className="grid grid-cols-4 gap-1 md:gap-2">
           {posts.map((post) => (
             <PostModal postId={post.id} key={post.id}>
-              <div className="bg-muted aspect-square w-full"></div>
+              <div className="relative aspect-square w-full">
+                <Image
+                  src={post.thumbnailUrl}
+                  alt=""
+                  className="object-cover"
+                  fill
+                />
+              </div>
             </PostModal>
           ))}
         </div>

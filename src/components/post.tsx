@@ -149,7 +149,11 @@ export default function Post({ data, isLoading }: PostProps) {
       </div>
       <div className="mb-4">
         <p className="mb-3 text-sm">{data.caption}</p>
-        <VideoPlayer id={data.id} src={data.videoUrl} />
+        <VideoPlayer
+          id={data.id}
+          src={data.videoUrl}
+          poster={data.thumbnails?.at(0)?.url}
+        />
       </div>
       {hasAnyCreditsOrTags && (
         <div className="bg-muted/50 text-muted-foreground mb-4 space-y-2 rounded-lg p-3 text-sm">

@@ -4,7 +4,7 @@ import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import VideoInput from "./video-input";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   Form,
   FormControl,
@@ -22,22 +22,25 @@ import {
   DialogTitle,
 } from "~/components/ui/dialog";
 import { Label } from "~/components/ui/label";
-import { useUploadVideo } from "./useUploadVideo";
+import { useChunkedUpload } from "./useChunkedUpload";
 import { TagInput } from "~/components/ui/tag-input";
 import { Input } from "~/components/ui/input";
-import { Plus, X } from "lucide-react";
+import { Image as ImageIcon, Pause, Play, Plus, X } from "lucide-react";
 import { Separator } from "~/components/ui/separator";
-import { ScrollArea } from "~/components/ui/scroll-area";
+import { ScrollArea, ScrollBar } from "~/components/ui/scroll-area";
 import { toast } from "sonner";
 import useSuggestionSearch from "./useSuggestionSearch";
 import { useTRPC } from "~/trpc/react";
 import { useMutation } from "@tanstack/react-query";
 import type { PostModalPageProps } from ".";
+import Image from "next/image";
+import { Slider } from "~/components/ui/slider";
 
 const tagSchema = z.object({ id: z.string().nullable(), name: z.string() });
 
 const basicInfoSchema = z.object({
   file: z.instanceof(File, { message: "A video is required" }),
+  thumbnail: z.instanceof(File, { message: "A thumbnail is required" }),
   caption: z
     .string()
     .min(1, { message: "A caption is required" })
@@ -69,6 +72,18 @@ export default function CreateRegularPost({ onPostStart }: PostModalPageProps) {
   const [artworkUrl, setArtworkUrl] = useState("");
   const trpc = useTRPC();
   const createPost = useMutation(trpc.post.createPost.mutationOptions());
+  const { mutateAsync: cropThumbnail } = useMutation(
+    trpc.file.cropImage.mutationOptions(),
+  );
+  const [thumbnailMode, baseSetThumbnailMode] = useState<"upload" | "frame">();
+  const [thumbnailPreview, baseSetThumbnailPreview] = useState<string | null>(
+    null,
+  );
+  const [videoCurrentTime, setVideoCurrentTime] = useState(0);
+  const [isVideoPlaying, setIsVideoPlaying] = useState(false);
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const thumbnailInputLabelRef = useRef<HTMLLabelElement>(null);
   const { userSearch, categorySearch } = useSuggestionSearch();
   const basicInfoForm = useForm<z.infer<typeof basicInfoSchema>>({
     resolver: zodResolver(basicInfoSchema),
@@ -90,7 +105,25 @@ export default function CreateRegularPost({ onPostStart }: PostModalPageProps) {
       artCredits: [],
     },
   });
-  const uploadVideo = useUploadVideo();
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video) return;
+    video.addEventListener("timeupdate", () =>
+      setVideoCurrentTime(video.currentTime),
+    );
+    video.addEventListener("play", () => setIsVideoPlaying(true));
+    video.addEventListener("pause", () => setIsVideoPlaying(false));
+    return () => {
+      video.removeEventListener("timeupdate", () =>
+        setVideoCurrentTime(video.currentTime),
+      );
+      video.removeEventListener("play", () => setIsVideoPlaying(true));
+      video.removeEventListener("pause", () => setIsVideoPlaying(false));
+    };
+  }, [videoRef.current]);
+
+  const upload = useChunkedUpload();
+  const videoFile = basicInfoForm.watch("file");
 
   function handleBasicInfoSubmit(data: z.infer<typeof basicInfoSchema>) {
     setBasicData(data);
@@ -103,7 +136,8 @@ export default function CreateRegularPost({ onPostStart }: PostModalPageProps) {
     if (!basicData) return;
     const uploadPost = async () => {
       if (onPostStart) onPostStart();
-      const videoUrl = await uploadVideo(basicData.file);
+      const videoUrl = await upload(basicData.file);
+      const thumbnailUrl = await upload(basicData.thumbnail);
       return await createPost.mutateAsync({
         ...basicData,
         videoUrl,
@@ -114,6 +148,7 @@ export default function CreateRegularPost({ onPostStart }: PostModalPageProps) {
           (tag) => tag.id!,
         ),
         inspiredByUserIds: data.inspiredBy.map((tag) => tag.id!),
+        thumbnailUrls: [thumbnailUrl],
       });
     };
     toast.promise(uploadPost, {
@@ -121,6 +156,71 @@ export default function CreateRegularPost({ onPostStart }: PostModalPageProps) {
       success: "Post created!",
       error: "Error creating post",
     });
+  }
+
+  function formatTime(time: number) {
+    const minutes = Math.floor(time / 60);
+    const seconds = Math.floor(time % 60);
+    return `${minutes}:${seconds.toString().padStart(2, "0")}`;
+  }
+
+  function setThumbnailPreview(newUrl: string | null) {
+    baseSetThumbnailPreview((prevUrl) => {
+      if (prevUrl) URL.revokeObjectURL(prevUrl);
+      return newUrl;
+    });
+  }
+
+  function setThumbnailMode(newMode: "upload" | "frame") {
+    setThumbnailPreview(null);
+    baseSetThumbnailMode(newMode);
+  }
+
+  function captureVideoFrame() {
+    if (videoRef.current && canvasRef.current) {
+      const video = videoRef.current;
+      const canvas = canvasRef.current;
+      const videoContainerRect =
+        videoRef.current?.parentElement?.getBoundingClientRect();
+      const videoRect = video.getBoundingClientRect();
+      const ctx = canvas.getContext("2d");
+
+      if (ctx && videoContainerRect && videoRect) {
+        canvas.width = videoContainerRect.width;
+        canvas.height = videoContainerRect.height;
+
+        ctx.fillStyle = "black";
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        const dw =
+          videoContainerRect.height * (video.videoWidth / video.videoHeight);
+        ctx.drawImage(
+          video,
+          0,
+          0,
+          video.videoWidth,
+          video.videoHeight,
+          (videoContainerRect.width - dw) / 2,
+          0,
+          dw,
+          videoContainerRect.height,
+        );
+
+        canvas.toBlob(
+          (blob) => {
+            if (blob) {
+              const file = new File([blob], `${crypto.randomUUID()}.jpg`, {
+                type: "image/jpeg",
+              });
+              basicInfoForm.setValue("thumbnail", file);
+              const url = URL.createObjectURL(blob);
+              setThumbnailPreview(url);
+            }
+          },
+          "image/jpeg",
+          0.9,
+        );
+      }
+    }
   }
 
   if (page === "basicInfo") {
@@ -132,75 +232,217 @@ export default function CreateRegularPost({ onPostStart }: PostModalPageProps) {
             Let&apos;s get some basic information about your post.
           </DialogDescription>
         </DialogHeader>
-        <Form key="basicInfo" {...basicInfoForm}>
-          <form
-            id="basic-info"
-            onSubmit={basicInfoForm.handleSubmit(handleBasicInfoSubmit)}
-            className="space-y-4"
-          >
-            <FormField
-              control={basicInfoForm.control}
-              name="file"
-              render={({
-                field: { value: _value, onChange: _onChange, ...fieldProps },
-              }) => (
-                <FormItem>
-                  <Label>Video</Label>
-                  <FormControl>
-                    <VideoInput
-                      onVideoChange={(file) =>
-                        basicInfoForm.setValue("file", file!)
-                      }
-                      {...fieldProps}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={basicInfoForm.control}
-              name="caption"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Caption</FormLabel>
-                  <FormControl>
-                    <Textarea
-                      placeholder="I worked really hard on this edit..."
-                      className="resize-none"
-                      {...field}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <div className="space-y-2">
+        <ScrollArea className="-mx-6 max-h-[60vh] px-6">
+          <Form key="basicInfo" {...basicInfoForm}>
+            <form
+              id="basic-info"
+              onSubmit={basicInfoForm.handleSubmit(handleBasicInfoSubmit)}
+              className="mb-4 space-y-4"
+            >
               <FormField
                 control={basicInfoForm.control}
-                name="categories"
-                render={({ field }) => (
+                name="file"
+                render={({
+                  field: { value: _value, onChange: _onChange, ...fieldProps },
+                }) => (
                   <FormItem>
-                    <FormLabel>Categories</FormLabel>
+                    <Label>Video</Label>
                     <FormControl>
-                      <TagInput
-                        onSearch={categorySearch}
-                        {...field}
-                        className="w-full"
+                      <VideoInput
+                        videoRef={videoRef}
+                        onVideoChange={(file) =>
+                          basicInfoForm.setValue("file", file!)
+                        }
+                        {...fieldProps}
                       />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
               />
-            </div>
-          </form>
-        </Form>
-        <DialogFooter>
-          <Button type="submit" form="basic-info">
-            Next
-          </Button>
-        </DialogFooter>
+              <div className="space-y-2">
+                <Label>Thumbnail</Label>
+                <div className="flex items-center gap-4">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="relative h-24 flex-1"
+                    disabled={!videoFile}
+                    onClick={() => {
+                      setThumbnailMode("upload");
+                      thumbnailInputLabelRef.current?.click();
+                    }}
+                  >
+                    <ImageIcon className="size-6" />
+                    <p>Upload thumbnail</p>
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="h-24 flex-1"
+                    disabled={!videoFile}
+                    onClick={() => setThumbnailMode("frame")}
+                  >
+                    <Play className="size-6" />
+                    <p>Use video frame</p>
+                  </Button>
+                </div>
+                <FormField
+                  control={basicInfoForm.control}
+                  name="thumbnail"
+                  render={({
+                    field: {
+                      value: _value,
+                      onChange: _onChange,
+                      ...fieldProps
+                    },
+                  }) => (
+                    <FormItem className="flex-1">
+                      <FormControl>
+                        <Input
+                          type="file"
+                          accept="image/*"
+                          className="hidden"
+                          disabled={!videoFile}
+                          onChange={(event) => {
+                            const file = event.target.files?.[0];
+                            if (file) {
+                              setThumbnailPreview(URL.createObjectURL(file));
+                              basicInfoForm.setValue("thumbnail", file);
+                            }
+                          }}
+                          {...fieldProps}
+                        />
+                      </FormControl>
+                      <FormLabel ref={thumbnailInputLabelRef} />
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                {thumbnailMode === "frame" && (
+                  <div className="bg-muted/30 space-y-3 rounded-xl p-4">
+                    <div className="text-muted-foreground flex items-center justify-between text-sm">
+                      <span>Select frame for thumbnail</span>
+                      <span>
+                        {formatTime(videoCurrentTime)} /{" "}
+                        {formatTime(videoRef.current?.duration ?? 0)}
+                      </span>
+                    </div>
+
+                    <div className="flex items-center gap-3">
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8"
+                        onClick={() =>
+                          isVideoPlaying
+                            ? videoRef.current?.play()
+                            : videoRef.current?.pause()
+                        }
+                      >
+                        {isVideoPlaying ? (
+                          <Pause className="h-4 w-4" />
+                        ) : (
+                          <Play className="h-4 w-4" />
+                        )}
+                      </Button>
+
+                      <div className="flex-1">
+                        <Slider
+                          value={[videoCurrentTime]}
+                          max={videoRef.current?.duration ?? 0}
+                          step={0.1}
+                          onValueChange={([time]) => {
+                            if (!videoRef.current) return;
+                            videoRef.current.currentTime = time ?? 0;
+                          }}
+                          className="w-full"
+                        />
+                      </div>
+
+                      <Button
+                        type="button"
+                        size="sm"
+                        onClick={captureVideoFrame}
+                        className="rounded-lg"
+                      >
+                        Capture
+                      </Button>
+                    </div>
+                    <canvas ref={canvasRef} className="hidden" />
+                  </div>
+                )}
+                {thumbnailPreview && (
+                  <div className="relative aspect-video w-full">
+                    <Button
+                      type="button"
+                      variant="destructive"
+                      size="icon"
+                      className="absolute top-2 right-2 z-10 h-8 w-8 rounded-full"
+                      onClick={() => {
+                        setThumbnailPreview(null);
+                        basicInfoForm.setValue(
+                          "thumbnail",
+                          null as unknown as File,
+                        );
+                      }}
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                    <Image
+                      src={thumbnailPreview}
+                      alt="Thumbnail Preview"
+                      className="rounded-md"
+                      fill
+                    />
+                  </div>
+                )}
+              </div>
+              <FormField
+                control={basicInfoForm.control}
+                name="caption"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Caption</FormLabel>
+                    <FormControl>
+                      <Textarea
+                        placeholder="I worked really hard on this edit..."
+                        className="resize-none"
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <div className="space-y-2">
+                <FormField
+                  control={basicInfoForm.control}
+                  name="categories"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Categories</FormLabel>
+                      <FormControl>
+                        <TagInput
+                          onSearch={categorySearch}
+                          {...field}
+                          className="w-full"
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+            </form>
+          </Form>
+          <DialogFooter>
+            <Button type="submit" form="basic-info">
+              Next
+            </Button>
+          </DialogFooter>
+        </ScrollArea>
       </>
     );
   } else {
