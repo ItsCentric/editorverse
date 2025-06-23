@@ -28,10 +28,11 @@ export function useChunkedUpload(options?: UploadVideoOptions) {
 
   const CHUNK_SIZE = (options?.chunkSize ?? 10) * 1024 * 1024; // MB
 
-  return async (file: File) => {
+  return async (file: File, filename?: string) => {
+    const coalescedFilename = filename ?? file.name;
     try {
       const { uploadId } = await initiateUpload.mutateAsync({
-        filename: file.name,
+        filename: coalescedFilename,
         contentType: file.type,
       });
       const chunks = [];
@@ -46,7 +47,7 @@ export function useChunkedUpload(options?: UploadVideoOptions) {
         chunks.map((chunk, i) =>
           limit(async () => {
             const urlQueryOptions = trpc.file.getUploadUrl.queryOptions({
-              filename: file.name,
+              filename: coalescedFilename,
               uploadId,
               partNumber: i + 1,
             });
@@ -69,7 +70,7 @@ export function useChunkedUpload(options?: UploadVideoOptions) {
       );
       console.log("All chunks uploaded successfully!", parts);
       const { url } = await completeUpload.mutateAsync({
-        filename: file.name,
+        filename: coalescedFilename,
         uploadId,
         parts,
       });

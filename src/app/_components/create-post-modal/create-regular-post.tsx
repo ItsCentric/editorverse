@@ -4,7 +4,7 @@ import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import VideoInput from "./video-input";
-import { useEffect, useRef, useState } from "react";
+import { useContext, useEffect, useRef, useState } from "react";
 import {
   Form,
   FormControl,
@@ -35,6 +35,7 @@ import { useMutation } from "@tanstack/react-query";
 import type { PostModalPageProps } from ".";
 import Image from "next/image";
 import { Slider } from "~/components/ui/slider";
+import { SessionContext } from "../session-provider";
 
 const tagSchema = z.object({ id: z.string().nullable(), name: z.string() });
 
@@ -85,6 +86,7 @@ export default function CreateRegularPost({ onPostStart }: PostModalPageProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const thumbnailInputLabelRef = useRef<HTMLLabelElement>(null);
   const { userSearch, categorySearch } = useSuggestionSearch();
+  const session = useContext(SessionContext);
   const basicInfoForm = useForm<z.infer<typeof basicInfoSchema>>({
     resolver: zodResolver(basicInfoSchema),
     defaultValues: {
@@ -133,12 +135,20 @@ export default function CreateRegularPost({ onPostStart }: PostModalPageProps) {
   async function handleCreditsAndTagsSubmit(
     data: z.infer<typeof creditsAndTagsSchema>,
   ) {
-    if (!basicData) return;
+    if (!basicData || !session?.user) return;
     const uploadPost = async () => {
       if (onPostStart) onPostStart();
-      const videoUrl = await upload(basicData.file);
-      const thumbnailUrl = await upload(basicData.thumbnail);
+      const postId = crypto.randomUUID();
+      const videoUrl = await upload(
+        basicData.file,
+        `${session.user.id}/${postId}/${crypto.randomUUID()}.${basicData.file.type.split("/")[1]}`,
+      );
+      const thumbnailUrl = await upload(
+        basicData.thumbnail,
+        `${session.user.id}/${postId}/thumbnails/${crypto.randomUUID()}.${basicData.thumbnail.type.split("/")[1]}`,
+      );
       return await createPost.mutateAsync({
+        id: postId,
         ...basicData,
         videoUrl,
         type: "regular",
@@ -208,7 +218,7 @@ export default function CreateRegularPost({ onPostStart }: PostModalPageProps) {
         canvas.toBlob(
           (blob) => {
             if (blob) {
-              const file = new File([blob], `${crypto.randomUUID()}.jpg`, {
+              const file = new File([blob], "thumbnail.jpg", {
                 type: "image/jpeg",
               });
               basicInfoForm.setValue("thumbnail", file);
