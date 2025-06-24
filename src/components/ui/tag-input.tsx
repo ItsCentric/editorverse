@@ -144,7 +144,7 @@ export const TagInput = forwardRef<HTMLInputElement, TagInputProps>(
     }, [pending]);
 
     return (
-      <Popover modal open={suggestions.length > 0}>
+      <Popover open={suggestions.length > 0}>
         <div
           className={cn(
             "focus-within:border-ring focus-within:ring-ring/50 selection:bg-primary selection:text-primary-foreground relative flex flex-wrap items-center justify-start gap-2 rounded-md border px-3 py-2 text-sm shadow-xs transition-[color,box-shadow] focus-within:ring-[3px]",

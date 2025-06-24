@@ -107,14 +107,19 @@ export const postRouter = createTRPCRouter({
         const categoriesData = nonexistingCategories.map((category) => ({
           name: category,
         }));
-        await tx
-          .insert(categories)
-          .values(categoriesData)
-          .onConflictDoNothing();
-        const categoriesResult = await tx
-          .select({ id: categories.id })
-          .from(categories)
-          .where(inArray(categories.name, nonexistingCategories));
+        if (categoriesData.length > 0) {
+          await tx
+            .insert(categories)
+            .values(categoriesData)
+            .onConflictDoNothing();
+        }
+        const categoriesResult =
+          nonexistingCategories.length > 0
+            ? await tx
+                .select({ id: categories.id })
+                .from(categories)
+                .where(inArray(categories.name, nonexistingCategories))
+            : [];
         const allCategoryIds = [
           ...existingCategories,
           ...categoriesResult.map((category) => category.id),
