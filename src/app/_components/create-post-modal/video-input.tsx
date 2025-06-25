@@ -66,6 +66,9 @@ export default function UploadVideo({
           className="absolute top-2 right-2 h-8 w-8 rounded-full"
           onClick={() => {
             setVideoPreview(null);
+            handleVideoChange({
+              target: { files: null },
+            } as unknown as React.ChangeEvent<HTMLInputElement>);
           }}
         >
           <X className="h-4 w-4" />
