@@ -3,6 +3,8 @@ import { createTRPCRouter, protectedProcedure } from "../trpc";
 import {
   CompleteMultipartUploadCommand,
   CreateMultipartUploadCommand,
+  DeleteObjectsCommand,
+  ListObjectsV2Command,
   S3Client,
   UploadPartCommand,
 } from "@aws-sdk/client-s3";
@@ -19,6 +21,38 @@ const b2 = new S3Client({
     secretAccessKey: env.B2_APP_KEY,
   },
 });
+
+export async function deleteFolder(folderPath: string) {
+  const listCmd = new ListObjectsV2Command({
+    Bucket: env.B2_BUCKET,
+    Prefix: folderPath,
+  });
+  const listedObjects = await b2.send(listCmd);
+
+  if (listedObjects.Contents && listedObjects.Contents.length > 0) {
+    const deleteParams = {
+      Bucket: env.B2_BUCKET,
+      Delete: { Objects: [] as { Key: string }[] },
+    };
+
+    listedObjects.Contents.forEach(({ Key }) => {
+      if (Key) {
+        deleteParams.Delete.Objects.push({ Key });
+      }
+    });
+
+    const deleteCmd = new DeleteObjectsCommand(deleteParams);
+    const deleteResponse = await b2.send(deleteCmd);
+    if (deleteResponse.Errors && deleteResponse.Errors.length > 0) {
+      console.error("Errors occurred during deletion:", deleteResponse.Errors);
+      throw new Error("Failed to delete some objects");
+    }
+
+    if (listedObjects.IsTruncated) {
+      await deleteFolder(folderPath);
+    }
+  }
+}
 
 export const fileRouter = createTRPCRouter({
   initiateUpload: protectedProcedure

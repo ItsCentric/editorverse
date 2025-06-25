@@ -14,6 +14,7 @@ import { users } from "~/server/db/schema/auth";
 import { createTRPCRouter, protectedProcedure, publicProcedure } from "../trpc";
 import { z } from "zod/v4";
 import { and, desc, eq, ilike, inArray, lt, or, sql } from "drizzle-orm";
+import { deleteFolder } from "./file";
 
 export const postsSchema = createSelectSchema(posts);
 export const usersSchema = createSelectSchema(users);
@@ -292,4 +293,18 @@ export const postRouter = createTRPCRouter({
     if (!post) throw new Error("Post not found");
     return post;
   }),
+
+  deletePost: protectedProcedure
+    .input(z.uuid())
+    .mutation(async ({ ctx, input }) => {
+      const { db, auth } = ctx;
+      const post = await db.query.posts.findFirst({
+        where: and(eq(posts.id, input), eq(posts.authorId, auth.id)),
+      });
+      if (!post) throw new Error("Post not found or you are not the author");
+      await db.transaction(async (tx) => {
+        await tx.delete(posts).where(eq(posts.id, input));
+        await deleteFolder(`${auth.id}/${input}`);
+      });
+    }),
 });
