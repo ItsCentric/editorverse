@@ -35,7 +35,7 @@ export default function UploadVideo({
       <div className="border-primary hover:bg-primary/5 cursor-pointer rounded-xl border-2 border-dashed p-8 text-center transition-colors">
         <Input
           type="file"
-          accept="video/*"
+          accept="video/mp4,video/mov,video/webm"
           onChange={handleVideoChange}
           className="hidden"
           {...props}
