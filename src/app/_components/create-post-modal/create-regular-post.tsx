@@ -39,19 +39,67 @@ import { SessionContext } from "../session-provider";
 import useAspectRatioMappings from "~/lib/useAspectRatioMappings";
 
 const tagSchema = z.object({ id: z.string().nullable(), name: z.string() });
+const allowedVideoTypesEnum = z.enum([
+  "video/mp4",
+  "video/webm",
+  "video/quicktime",
+]);
+const allowedThumbnailTypesEnum = z.enum([
+  "image/jpeg",
+  "image/png",
+  "image/webp",
+]);
 
-const basicInfoSchema = z.object({
-  file: z.instanceof(File, { message: "A video is required" }),
-  thumbnail: z.instanceof(File, { message: "A thumbnail is required" }),
-  caption: z
-    .string()
-    .min(1, { message: "A caption is required" })
-    .max(250, { message: "Caption must be less than 250 characters" }),
-  categories: z
-    .array(tagSchema)
-    .min(1, { message: "At least one category is required" })
-    .max(10, { message: "You may only add up to 10 categories" }),
-});
+const basicInfoSchema = z
+  .object({
+    file: z.instanceof(File, { message: "A video is required" }),
+    thumbnail: z.instanceof(File, { message: "A thumbnail is required" }),
+    caption: z
+      .string()
+      .min(1, { message: "A caption is required" })
+      .max(250, { message: "Caption must be less than 250 characters" }),
+    categories: z
+      .array(tagSchema)
+      .min(1, { message: "At least one category is required" })
+      .max(10, { message: "You may only add up to 10 categories" }),
+  })
+  .superRefine((data, ctx) => {
+    if (data.thumbnail.size > 5 * 1024 * 1024) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.too_big,
+        maximum: 5 * 1024 * 1024,
+        type: "array",
+        inclusive: true,
+        message: "Thumbnail must be less than 5MB",
+      });
+    }
+
+    if (data.file.size > 100 * 1024 * 1024) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.too_big,
+        maximum: 100 * 1024 * 1024,
+        type: "array",
+        inclusive: true,
+        message: "Video must be less than 100MB",
+      });
+    }
+
+    if (!allowedVideoTypesEnum.safeParse(data.file.type).success) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Video must be a mp4, webm, or mov file",
+        path: ["file"],
+      });
+    }
+
+    if (!allowedThumbnailTypesEnum.safeParse(data.thumbnail.type).success) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Thumbnail must be a jpg, png, or webp file",
+        path: ["thumbnail"],
+      });
+    }
+  });
 
 const creditsAndTagsSchema = z.object({
   dedicatedTo: z.array(tagSchema),
@@ -324,7 +372,7 @@ export default function CreateRegularPost({ onPostStart }: PostModalPageProps) {
                       <FormControl>
                         <Input
                           type="file"
-                          accept="image/*"
+                          accept="image/jpeg,image/png,image/webp"
                           className="hidden"
                           disabled={!videoFile}
                           onChange={(event) => {
